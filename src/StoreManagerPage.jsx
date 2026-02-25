@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function StoreManagerPage({ onBack, inventory, setInventory, onViewRequests, onAddItem, approvedRequests, onMarkFinished }) {
+export default function StoreManagerPage({ onBack, inventory, setInventory, onViewRequests, onAddItem, onViewFinished, approvedRequests, onMarkFinished }) {
   const handleDelete = (id) => {
     if (window.confirm("Delete this item?")) {
       setInventory(inventory.filter(item => item.id !== id));
@@ -14,6 +14,7 @@ export default function StoreManagerPage({ onBack, inventory, setInventory, onVi
           <button className="back-btn" onClick={onBack}>← Logout</button>
           <h1 className="store-title" style={{color: '#059669'}}>Inventory Control</h1>
           <button className="records-btn" style={{background: '#059669'}} onClick={onAddItem}>+ Add New Item</button>
+          <button className="records-btn" style={{background: '#6b7280'}} onClick={onViewFinished}>Finished Requests</button>
         </div>
         
         {/* Approved Requests Section */}

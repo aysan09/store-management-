@@ -8,6 +8,7 @@ import RequestStatus from './RequestStatus';
 import HRReview from './HRReview';
 import HRRecords from './HRRecords';
 import ApprovedRequests from './approvedrequests';
+import FinishedRequests from './FinishedRequests';
 import HeroPage from './HeroPage';
 
 export default function App() {
@@ -160,6 +161,15 @@ export default function App() {
         onBack={() => setView('add-item')}
         approvedRequests={requests.filter(req => req.status === 'Approved')}
         onMarkFinished={markRequestFinished}
+      />
+    );
+  }
+
+  if (view === 'finished-requests') {
+    return (
+      <FinishedRequests 
+        onBack={() => setView('store-manager')}
+        finishedRequests={requests.filter(req => req.status === 'Finished')}
       />
     );
   }
