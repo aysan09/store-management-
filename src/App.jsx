@@ -10,44 +10,24 @@ import HRRecords from './HRRecords';
 import ApprovedRequests from './approvedrequests';
 import FinishedRequests from './FinishedRequests';
 import HeroPage from './HeroPage';
+import EmployeeRegistration from './EmployeeRegistration';
 
 export default function App() {
   const [view, setView] = useState('hero');
   const [user, setUser] = useState(null);
 
   // Source of truth for inventory items
-  const [inventory, setInventory] = useState([
-    {
-      id: 1,
-      model: "Modem",
-      brand: "NETGEAR, Motorola",
-      category: "Data Communication",
-      quantity: 5,
-      photo: "https://via.placeholder.com/150",
-      date: "2024-02-25"
-    },
-    {
-      id: 2,
-      model: "CCTV wire",
-      brand: "D-Link",
-      category: "wire",
-      quantity: 8,
-      photo: "https://via.placeholder.com/150",
-      date: "2024-02-24"
-    },
-    {
-      id: 3,
-      model: "CCTV wire",
-      brand: "D-Link",
-      category: "wire",
-      quantity: 0,
-      photo: "https://via.placeholder.com/150",
-      date: "2024-02-23"
-    }
-  ]);
+  const [inventory, setInventory] = useState([]);
 
   // State to track requests submitted by employees
   const [requests, setRequests] = useState([]);
+
+  // State to track registered employees
+  const [employees, setEmployees] = useState([
+    // Default employees for testing
+    { id: 1, name: "HR Manager", department: "HR", position: "Manager", employeeId: "HR100", password: "hr123", dateCreated: "2024-02-26" },
+    { id: 2, name: "Store Manager", department: "Store", position: "Manager", employeeId: "STORE100", password: "store123", dateCreated: "2024-02-26" }
+  ]);
 
   // Function to mark a request as finished
   const markRequestFinished = (employeeName, itemName, quantity) => {
@@ -59,15 +39,31 @@ export default function App() {
     ));
   };
 
+  // Function to add a new employee
+  const handleAddEmployee = (newEmployee) => {
+    setEmployees([...employees, newEmployee]);
+  };
+
   // Logic to handle login and role redirection
   const handleLoginSuccess = (userData) => {
-    setUser(userData);
-    if (userData.id === 'HR100') {
-      setView('hr-reviews');
-    } else if (userData.id === 'STORE100') {
-      setView('store-manager');
+    // Find the employee in the registered employees list
+    const employee = employees.find(emp => 
+      emp.employeeId === userData.id && emp.password === userData.password
+    );
+    
+    if (employee) {
+      setUser(employee);
+      
+      // Role-based navigation based on employee position/department
+      if (employee.position.toLowerCase().includes('hr') || employee.department.toLowerCase().includes('hr')) {
+        setView('hr-reviews');
+      } else if (employee.position.toLowerCase().includes('manager') && employee.department.toLowerCase().includes('store')) {
+        setView('store-manager');
+      } else {
+        setView('store');
+      }
     } else {
-      setView('store');
+      alert('Invalid employee ID or password. Please try again.');
     }
   };
 
@@ -171,6 +167,7 @@ export default function App() {
       <HRReview 
         onBack={handleLogout} 
         onViewRecords={() => setView('hr-records')}
+        onRegisterEmployee={() => setView('employee-registration')}
         pendingRequests={requests}
         setRequests={setRequests}
       />
@@ -182,6 +179,15 @@ export default function App() {
       <HRRecords 
         onBack={handleLogout} 
         allRequests={requests}
+      />
+    );
+  }
+
+  if (view === 'employee-registration') {
+    return (
+      <EmployeeRegistration 
+        onBack={() => setView('hr-reviews')}
+        onAddEmployee={handleAddEmployee}
       />
     );
   }
