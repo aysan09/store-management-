@@ -1,7 +1,7 @@
 import React from 'react';
 import { sendApprovalNotification, sendEmployeeApprovalNotification } from './services/emailService';
 
-export default function HRReview({ onBack, onViewRecords, pendingRequests, setRequests }) {
+export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, pendingRequests, setRequests }) {
   const handleAction = async (employeeName, itemName, quantity, status) => {
     const currentDate = new Date().toISOString().split('T')[0];
     
@@ -57,7 +57,15 @@ export default function HRReview({ onBack, onViewRecords, pendingRequests, setRe
       <header className="status-header-row">
         <button className="back-btn" onClick={onBack}>← Logout</button>
         <h1 className="status-main-title">HR Review</h1>
-        <button className="records-btn" onClick={onViewRecords}>Records</button>
+        <div style={{display: 'flex', gap: '10px'}}>
+          <button className="records-btn" onClick={onViewRecords}>Records</button>
+          <button className="records-btn" style={{backgroundColor: '#10b981'}} onClick={() => {
+            // Navigate to employee registration
+            if (onRegisterEmployee) {
+              onRegisterEmployee();
+            }
+          }}>Register Employee</button>
+        </div>
       </header>
       <div className="status-container">
         <div className="hr-table-header">

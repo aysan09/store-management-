@@ -9,8 +9,9 @@ export default function Login({ onBack, onLoginSuccess }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log('Login submitted with ID:', empId);
-    // Capture the ID to identify the user role in App.jsx
-    onLoginSuccess({ id: empId });
+    
+    // Pass both ID and password to App.jsx for validation
+    onLoginSuccess({ id: empId, password: password });
   };
 
   return (
