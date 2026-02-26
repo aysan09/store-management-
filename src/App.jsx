@@ -47,38 +47,7 @@ export default function App() {
   ]);
 
   // State to track requests submitted by employees
-  const [requests, setRequests] = useState([
-    { 
-      employeeName: "Nati", 
-      itemName: "Modem", 
-      quantity: 6, 
-      purpose: "For developing ict infrastructure", 
-      status: "Pending", 
-      dateAdded: "2024-02-25",
-      dateApproved: null,
-      dateFinished: null
-    },
-    { 
-      employeeName: "Nati", 
-      itemName: "Modem", 
-      quantity: 6, 
-      purpose: "For developing ict infrastructure", 
-      status: "Approved", 
-      dateAdded: "2024-02-24",
-      dateApproved: "2024-02-24",
-      dateFinished: null
-    },
-    { 
-      employeeName: "Nati", 
-      itemName: "Modem", 
-      quantity: 6, 
-      purpose: "For developing ict infrastructure", 
-      status: "Approved", 
-      dateAdded: "2024-02-23",
-      dateApproved: "2024-02-23",
-      dateFinished: null
-    }
-  ]);
+  const [requests, setRequests] = useState([]);
 
   // Function to mark a request as finished
   const markRequestFinished = (employeeName, itemName, quantity) => {
@@ -136,6 +105,7 @@ export default function App() {
         setInventory={setInventory}
         onViewRequests={() => setView('hr-reviews')}
         onAddItem={() => setView('add-item')}
+        onViewFinished={() => setView('finished-requests')}
         approvedRequests={requests.filter(req => req.status === 'Approved')}
         onMarkFinished={markRequestFinished}
       />
