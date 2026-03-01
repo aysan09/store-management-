@@ -14,6 +14,7 @@ export default function RequestStatus({ onBack, requests }) {
           <div>Item Name</div>
           <div>Quantity</div>
           <div>Date</div>
+          <div>Purpose</div>
           <div>Status</div>
         </div>
 
@@ -23,6 +24,7 @@ export default function RequestStatus({ onBack, requests }) {
             <div>{req.itemName}</div>
             <div>{req.quantity}</div>
             <div style={{fontSize: '12px', color: '#666'}}>{req.dateAdded || 'N/A'}</div>
+            <div className="purpose-text">{req.purpose}</div>
             <div className={`approval-status ${req.status.toLowerCase()}`}>
               {req.status === "Pending" ? "⏳ Pending" : req.status === "Approved" ? "✅ Approved" : "❌ Rejected"}
             </div>

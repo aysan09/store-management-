@@ -8,6 +8,7 @@ const authRoutes = require('./routes/auth');
 const itemRoutes = require('./routes/items');
 const requestRoutes = require('./routes/requests');
 const employeeRoutes = require('./routes/employees');
+const sqlRoutes = require('./routes/sql');
 
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
@@ -31,6 +32,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/items', itemRoutes);
 app.use('/api/requests', requestRoutes);
 app.use('/api/employees', employeeRoutes);
+app.use('/api/sql', sqlRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

@@ -69,13 +69,14 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, pe
       </header>
       <div className="status-container">
         <div className="hr-table-header">
-          <div>Employee</div><div>Item</div><div>Qty</div><div>Date</div><div>Action</div>
+          <div>Employee</div><div>Item</div><div>Qty</div><div>Date</div><div>Purpose</div><div>Action</div>
         </div>
         {pendingOnly.length > 0 ? (
           pendingOnly.map((req, index) => (
             <div className="hr-table-row" key={index}>
               <div>{req.employeeName}</div><div>{req.itemName}</div><div>{req.quantity}</div>
               <div style={{fontSize: '12px', color: '#666'}}>{req.dateAdded || 'N/A'}</div>
+              <div className="purpose-text">{req.purpose}</div>
               <div className="hr-actions">
                 <button className="approve-btn" onClick={() => handleAction(req.employeeName, req.itemName, req.quantity, 'Approved')}>Approve</button>
                 <button className="reject-btn" onClick={() => handleAction(req.employeeName, req.itemName, req.quantity, 'Rejected')}>Reject</button>
