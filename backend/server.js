@@ -49,10 +49,14 @@ app.use(errorHandler);
 // Initialize database and start server
 async function startServer() {
   try {
-    console.log('✅ Using mock database (in-memory storage)');
-    console.log('✅ Default users available:');
-    console.log('   - HR Manager: HR100 / password');
-    console.log('   - Store Manager: STORE100 / password');
+    // Import database connection
+    const { testConnection, initDatabase } = require('./config/db');
+    
+    // Test database connection
+    await testConnection();
+    
+    // Initialize database tables
+    await initDatabase();
     
     // Start server
     app.listen(PORT, () => {
