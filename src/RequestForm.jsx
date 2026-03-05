@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { sendRequestNotification } from './services/emailService';
 
 export default function RequestForm({ onBack, onViewStatus, items, onAddRequest }) {
   const [selectedId, setSelectedId] = useState(items[0]?.id || "");
@@ -22,17 +21,6 @@ export default function RequestForm({ onBack, onViewStatus, items, onAddRequest 
         dateFinished: null      // Will be set when finished/distributed
       };
 
-      // Send email notification to HR managers
-      try {
-        const emailResult = await sendRequestNotification(newRequest);
-        if (emailResult.success) {
-          console.log('✅ Email notification sent successfully');
-        } else {
-          console.warn('⚠️ Email notification failed:', emailResult.message);
-        }
-      } catch (error) {
-        console.error('❌ Error sending email notification:', error);
-      }
 
       onAddRequest(newRequest);
     }

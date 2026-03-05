@@ -1,7 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const mockDb = require('../config/mockDb');
+const { pool } = require('../config/db');
 
 const router = express.Router();
 
@@ -21,14 +21,19 @@ router.post('/login', async (req, res) => {
     }
 
     // Check if employee exists
-    const employee = mockDb.getEmployeeByEmployeeId(employeeId);
+    const [rows] = await pool.execute(
+      'SELECT * FROM employees WHERE employee_id = ?',
+      [employeeId]
+    );
 
-    if (!employee) {
+    if (rows.length === 0) {
       return res.status(400).json({
         success: false,
         message: 'Invalid credentials'
       });
     }
+
+    const employee = rows[0];
 
     // Check password
     const isMatch = await bcrypt.compare(password, employee.password);
@@ -107,15 +112,20 @@ router.get('/me', async (req, res) => {
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret');
     
-    // Get user from mock database
-    const employee = mockDb.getEmployeeById(decoded.employee.id);
+    // Get user from database
+    const [rows] = await pool.execute(
+      'SELECT id, name, department, position, employee_id, date_created FROM employees WHERE id = ?',
+      [decoded.employee.id]
+    );
 
-    if (!employee) {
+    if (rows.length === 0) {
       return res.status(401).json({
         success: false,
         message: 'Token is not valid'
       });
     }
+
+    const employee = rows[0];
 
     res.json({
       success: true,

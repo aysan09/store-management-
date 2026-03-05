@@ -1,5 +1,4 @@
 import React from 'react';
-import { sendApprovalNotification, sendEmployeeApprovalNotification } from './services/emailService';
 
 export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, pendingRequests, setRequests }) {
   const handleAction = async (employeeName, itemName, quantity, status) => {
@@ -15,38 +14,9 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, pe
         : req
     ));
 
-    // If the request was approved, send notifications to store managers and employee
-    if (status === 'Approved') {
-      const approvedRequest = pendingRequests.find(req => 
-        req.employeeName === employeeName && req.itemName === itemName && req.quantity === quantity
-      );
-      
-      if (approvedRequest) {
-        // Send notification to store managers
-        try {
-          const storeResult = await sendApprovalNotification(approvedRequest);
-          if (storeResult.success) {
-            console.log('✅ Store manager approval notification sent successfully');
-          } else {
-            console.warn('⚠️ Store manager approval notification failed:', storeResult.message);
-          }
-        } catch (error) {
-          console.error('❌ Error sending store manager approval notification:', error);
-        }
-
-        // Send notification to employee
-        try {
-          const employeeResult = await sendEmployeeApprovalNotification(approvedRequest);
-          if (employeeResult.success) {
-            console.log('✅ Employee approval notification sent successfully');
-          } else {
-            console.warn('⚠️ Employee approval notification failed:', employeeResult.message);
-          }
-        } catch (error) {
-          console.error('❌ Error sending employee approval notification:', error);
-        }
-      }
-    }
+    // Handle notification logic here if needed
+    // For now, just log the action
+    console.log(`Action: ${status} for ${employeeName} - ${itemName} x${quantity}`);
   };
 
   // Filter to show only pending requests

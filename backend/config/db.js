@@ -6,6 +6,7 @@ const dbConfig = {
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'store_management',
+  port: process.env.DB_PORT || 3306,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
@@ -22,6 +23,12 @@ async function testConnection() {
     connection.release();
   } catch (error) {
     console.error('❌ Database connection failed:', error.message);
+    console.error('Error details:', {
+      code: error.code,
+      errno: error.errno,
+      sqlMessage: error.sqlMessage,
+      sqlState: error.sqlState
+    });
     process.exit(1);
   }
 }
@@ -77,11 +84,15 @@ async function initDatabase() {
     // Insert default employees if table is empty
     const [employeeCount] = await connection.execute('SELECT COUNT(*) as count FROM employees');
     if (employeeCount[0].count === 0) {
+      const bcrypt = require('bcryptjs');
+      const hrPassword = await bcrypt.hash('hr123', 10);
+      const storePassword = await bcrypt.hash('store123', 10);
+      
       await connection.execute(`
         INSERT INTO employees (name, department, position, employee_id, password) VALUES
-        ('HR Manager', 'HR', 'Manager', 'HR100', '$2b$10$HR100PasswordHashHere'), -- This will be hashed properly
-        ('Store Manager', 'Store', 'Manager', 'STORE100', '$2b$10$Store100PasswordHashHere')
-      `);
+        (?, ?, ?, ?, ?),
+        (?, ?, ?, ?, ?)
+      `, ['HR Manager', 'HR', 'Manager', 'HR100', hrPassword, 'Store Manager', 'Store', 'Manager', 'STORE100', storePassword]);
     }
 
     connection.release();
