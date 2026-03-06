@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 export default function EmployeeRegistration({ onBack, onAddEmployee }) {
   const [form, setForm] = useState({
@@ -10,8 +10,26 @@ export default function EmployeeRegistration({ onBack, onAddEmployee }) {
     confirmPassword: ""
   });
   const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  // Load existing employees from database on component mount
+  useEffect(() => {
+    loadEmployees();
+  }, []);
+
+  const loadEmployees = async () => {
+    try {
+      const response = await fetch('/api/employees');
+      if (response.ok) {
+        const data = await response.json();
+        setEmployees(data.data || []);
+      }
+    } catch (error) {
+      console.error('Error loading employees:', error);
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!form.name || !form.department || !form.position || !form.employeeId || !form.password) {
@@ -24,36 +42,59 @@ export default function EmployeeRegistration({ onBack, onAddEmployee }) {
       return;
     }
 
-    // Check if employee ID already exists
-    if (employees.some(emp => emp.employeeId === form.employeeId)) {
-      alert("Employee ID already exists. Please choose a different ID.");
-      return;
+    setLoading(true);
+
+    try {
+      const response = await fetch('/api/employees', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: form.name,
+          department: form.department,
+          position: form.position,
+          employeeId: form.employeeId,
+          password: form.password
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Add to local state
+        const newEmployee = {
+          id: data.data.id,
+          name: data.data.name,
+          department: data.data.department,
+          position: data.data.position,
+          employeeId: data.data.employeeId,
+          dateCreated: data.data.date_created
+        };
+
+        setEmployees([...employees, newEmployee]);
+        onAddEmployee(newEmployee);
+        
+        // Reset form
+        setForm({
+          name: "",
+          department: "",
+          position: "",
+          employeeId: "",
+          password: "",
+          confirmPassword: ""
+        });
+        
+        alert("Employee registered successfully!");
+      } else {
+        alert(data.message || "Failed to register employee");
+      }
+    } catch (error) {
+      console.error('Error registering employee:', error);
+      alert("An error occurred while registering the employee");
+    } finally {
+      setLoading(false);
     }
-
-    const newEmployee = {
-      id: Date.now(),
-      name: form.name,
-      department: form.department,
-      position: form.position,
-      employeeId: form.employeeId,
-      password: form.password,
-      dateCreated: new Date().toISOString().split('T')[0]
-    };
-
-    setEmployees([...employees, newEmployee]);
-    onAddEmployee(newEmployee);
-    
-    // Reset form
-    setForm({
-      name: "",
-      department: "",
-      position: "",
-      employeeId: "",
-      password: "",
-      confirmPassword: ""
-    });
-    
-    alert("Employee registered successfully!");
   };
 
 
@@ -146,7 +187,7 @@ export default function EmployeeRegistration({ onBack, onAddEmployee }) {
           </div>
 
           {/* Employee List */}
-          <div style={{flex: 1, borderLeft: '1px solid #e5e7eb', paddingLeft: '30px'}}>
+              <div style={{flex: 1, borderLeft: '1px solid #e5e7eb', paddingLeft: '30px'}}>
             <h3 style={{marginBottom: '20px', color: '#374151'}}>Registered Employees</h3>
             {employees.length === 0 ? (
               <p style={{color: '#9ca3af', fontStyle: 'italic'}}>No employees registered yet.</p>
@@ -167,23 +208,15 @@ export default function EmployeeRegistration({ onBack, onAddEmployee }) {
                       </div>
                       <div style={{textAlign: 'right'}}>
                         <p style={{margin: '0 0 5px 0', color: '#6b7280', fontSize: '12px'}}>Created: {employee.dateCreated}</p>
-                        <button 
-                          onClick={() => {
-                            navigator.clipboard.writeText(employee.password);
-                            alert(`Password copied to clipboard: ${employee.password}`);
-                          }}
-                          style={{
-                            padding: '5px 10px',
-                            backgroundColor: '#3b82f6',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            fontSize: '12px'
-                          }}
-                        >
-                          Copy Password
-                        </button>
+                        <span style={{
+                          padding: '5px 10px',
+                          backgroundColor: '#9ca3af',
+                          color: 'white',
+                          borderRadius: '4px',
+                          fontSize: '12px'
+                        }}>
+                          Password not available
+                        </span>
                       </div>
                     </div>
                   </div>

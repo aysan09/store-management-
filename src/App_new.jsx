@@ -47,22 +47,35 @@ export default function App() {
 
   // Logic to handle login and role redirection
   const handleLoginSuccess = (userData) => {
+    // Validate input data
+    if (!userData || !userData.id || !userData.password) {
+      alert('Please enter both employee ID and password.');
+      return;
+    }
+    
     // Find the employee in the registered employees list
     const employee = employees.find(emp => 
-      emp.employeeId === userData.id && emp.password === userData.password
+      emp.employeeId === userData.id
     );
     
-    if (employee) {
+    // Check if employee exists and password matches
+    if (employee && employee.password === userData.password) {
       setUser(employee);
       
       // Role-based navigation based on employee position/department
-      if (employee.position.toLowerCase().includes('hr') || employee.department.toLowerCase().includes('hr')) {
-        setView('hr-reviews');
-      } else if (employee.position.toLowerCase().includes('manager') && employee.department.toLowerCase().includes('store')) {
-        setView('store-manager');
-      } else {
-        setView('store');
+      const position = employee.position.toLowerCase().trim();
+      const department = employee.department.toLowerCase().trim();
+      
+      // Determine role and navigate accordingly
+      let targetView = 'store'; // Default view for regular employees
+      
+      if (department.includes('hr') || position.includes('hr')) {
+        targetView = 'hr-reviews';
+      } else if (department.includes('store') && position.includes('manager')) {
+        targetView = 'store-manager';
       }
+      
+      setView(targetView);
     } else {
       alert('Invalid employee ID or password. Please try again.');
     }

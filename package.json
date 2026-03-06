@@ -19,5 +19,6 @@
   },
   "devDependencies": {
     "vite": "^7.3.1"
-  }
+  },
+  "proxy": "http://localhost:5000"
 }

@@ -12,8 +12,8 @@ async function testDirectConnection() {
     const connection = await mysql.createConnection({
       host: 'localhost',
       user: 'root',
-      password: '1234',
-      port: 33060
+      password: '',
+      port: 3306
     });
     
     console.log('✅ Direct connection successful!');
