@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, pendingRequests, setRequests }) {
+export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, onEmployeeManagement, pendingRequests, setRequests }) {
   const handleAction = async (employeeName, itemName, quantity, status) => {
     const currentDate = new Date().toISOString().split('T')[0];
     
@@ -31,8 +31,8 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, pe
           <button className="records-btn" onClick={onViewRecords}>Records</button>
           <button className="records-btn" style={{backgroundColor: '#3b82f6'}} onClick={() => {
             // Navigate to employee management
-            if (onRegisterEmployee) {
-              onRegisterEmployee();
+            if (onEmployeeManagement) {
+              onEmployeeManagement();
             }
           }}>Employee Management</button>
           <button className="records-btn" style={{backgroundColor: '#10b981'}} onClick={() => {

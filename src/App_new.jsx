@@ -182,6 +182,7 @@ export default function App() {
         onBack={handleLogout} 
         onViewRecords={() => setView('hr-records')}
         onRegisterEmployee={() => setView('employee-registration')}
+        onEmployeeManagement={() => setView('employee-management')}
         pendingRequests={requests}
         setRequests={setRequests}
       />
@@ -202,6 +203,14 @@ export default function App() {
       <EmployeeRegistration 
         onBack={() => setView('hr-reviews')}
         onAddEmployee={handleAddEmployee}
+      />
+    );
+  }
+
+  if (view === 'employee-management') {
+    return (
+      <HREmployees 
+        onBack={() => setView('hr-reviews')}
       />
     );
   }
