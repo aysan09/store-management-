@@ -29,6 +29,12 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, pe
         <h1 className="status-main-title">HR Review</h1>
         <div style={{display: 'flex', gap: '10px'}}>
           <button className="records-btn" onClick={onViewRecords}>Records</button>
+          <button className="records-btn" style={{backgroundColor: '#3b82f6'}} onClick={() => {
+            // Navigate to employee management
+            if (onRegisterEmployee) {
+              onRegisterEmployee();
+            }
+          }}>Employee Management</button>
           <button className="records-btn" style={{backgroundColor: '#10b981'}} onClick={() => {
             // Navigate to employee registration
             if (onRegisterEmployee) {

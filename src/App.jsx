@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Login from './Login';
 import StorePage from './StorePage';
 import StoreManagerPage from './StoreManagerPage';
@@ -11,10 +11,32 @@ import ApprovedRequests from './approvedrequests';
 import FinishedRequests from './FinishedRequests';
 import HeroPage from './HeroPage';
 import EmployeeRegistration from './EmployeeRegistration';
+import HREmployees from './HREmployees';
 
 export default function App() {
   const [view, setView] = useState('hero');
   const [user, setUser] = useState(null);
+
+  // Handle URL hash changes for navigation
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      if (hash) {
+        setView(hash);
+      }
+    };
+
+    // Listen for hash changes
+    window.addEventListener('hashchange', handleHashChange);
+    
+    // Set initial view from hash if present
+    const initialHash = window.location.hash.replace('#', '');
+    if (initialHash) {
+      setView(initialHash);
+    }
+
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   // Source of truth for inventory items
   const [inventory, setInventory] = useState([]);
@@ -45,31 +67,52 @@ export default function App() {
   };
 
   // Logic to handle login and role redirection
-  const handleLoginSuccess = (userData) => {
-    // Find the employee in the registered employees list
-    const employee = employees.find(emp => 
-      emp.employeeId === userData.id && emp.password === userData.password
-    );
-    
-    if (employee) {
-      setUser(employee);
+  const handleLoginSuccess = async (userData) => {
+    try {
+      // Use the proper authentication endpoint
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          employee_Id: userData.id,
+          password: userData.password
+        })
+      });
       
-      // Role-based navigation based on employee position/department
-      if (employee.position.toLowerCase().includes('hr') || employee.department.toLowerCase().includes('hr')) {
-        setView('hr-reviews');
-      } else if (employee.position.toLowerCase().includes('manager') && employee.department.toLowerCase().includes('store')) {
-        setView('store-manager');
+      const result = await response.json();
+      
+      if (result.success) {
+        const employee = result.data;
+        setUser(employee);
+        
+        // Role-based navigation based on employee position/department
+        if (employee.position.toLowerCase().includes('hr') || employee.department.toLowerCase().includes('hr')) {
+          setView('hr-reviews');
+        } else if (employee.position.toLowerCase().includes('manager') && employee.department.toLowerCase().includes('store')) {
+          setView('store-manager');
+        } else {
+          setView('store');
+        }
       } else {
-        setView('store');
+        alert(result.message || 'Invalid employee ID or password. Please try again.');
       }
-    } else {
-      alert('Invalid employee ID or password. Please try again.');
+    } catch (error) {
+      console.error('Login error:', error);
+      alert('Login failed. Please check if the server is running.');
     }
   };
 
   const handleLogout = () => {
     setUser(null);
     setView('hero');
+    window.location.hash = '';
+  };
+
+  const navigateTo = (viewName) => {
+    setView(viewName);
+    window.location.hash = viewName;
   };
 
   // --- View Rendering Logic ---
@@ -166,8 +209,8 @@ export default function App() {
     return (
       <HRReview 
         onBack={handleLogout} 
-        onViewRecords={() => setView('hr-records')}
-        onRegisterEmployee={() => setView('employee-registration')}
+        onViewRecords={() => navigateTo('hr-records')}
+        onRegisterEmployee={() => navigateTo('employee-registration')}
         pendingRequests={requests}
         setRequests={setRequests}
       />
@@ -179,6 +222,14 @@ export default function App() {
       <HRRecords 
         onBack={handleLogout} 
         allRequests={requests}
+      />
+    );
+  }
+
+  if (view === 'employee-management') {
+    return (
+      <HREmployees 
+        onBack={() => setView('hr-reviews')}
       />
     );
   }

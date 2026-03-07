@@ -19,15 +19,30 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
+// --- Middleware ---
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files (for uploaded images)
+// Serve static files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// API Routes
+// --- API Routes (Defined Globally) ---
+
+// Base API Route
+app.get('/api', (req, res) => {
+  res.json({
+    message: "Welcome to the Store Management API",
+    endpoints: [
+      "/api/auth",
+      "/api/items",
+      "/api/requests",
+      "/api/employees",
+      "/api/health"
+    ]
+  });
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/items', itemRoutes);
 app.use('/api/requests', requestRoutes);
@@ -43,13 +58,12 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Error handling middleware
+// Error handling middleware (Must be last)
 app.use(errorHandler);
 
-// Initialize database and start server
+// --- Server Initialization ---
 async function startServer() {
   try {
-    // Import database connection
     const { testConnection, initDatabase } = require('./config/db');
     
     // Test database connection

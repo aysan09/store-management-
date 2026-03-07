@@ -1,145 +1,67 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
 const { pool } = require('../config/db');
 
 const router = express.Router();
 
 // @route   POST /api/auth/login
-// @desc    Authenticate user & get token
+// @desc    Authenticate employee and return employee data
 // @access  Public
 router.post('/login', async (req, res) => {
   try {
-    const { employeeId, password } = req.body;
+    console.log('Auth request received:', req.body);
+    const { employee_Id, password } = req.body;
 
-    // Validate input
-    if (!employeeId || !password) {
+    // Validate required fields
+    if (!employee_Id || !password) {
+      console.log('Missing fields:', { employee_Id, password });
       return res.status(400).json({
         success: false,
         message: 'Please provide employee ID and password'
       });
     }
 
-    // Check if employee exists
+    // Find employee by employee ID
     const [rows] = await pool.execute(
-      'SELECT * FROM employees WHERE employee_id = ?',
-      [employeeId]
+      'SELECT id, name, department, position, employee_id, password, date_created FROM employees WHERE employee_id = ?',
+      [employee_Id]
     );
 
     if (rows.length === 0) {
-      return res.status(400).json({
+      return res.status(401).json({
         success: false,
-        message: 'Invalid credentials'
+        message: 'Invalid employee ID or password'
       });
     }
 
     const employee = rows[0];
 
-    // Check password
-    const isMatch = await bcrypt.compare(password, employee.password);
+    // Compare password with hashed password in database
+    const isPasswordValid = await bcrypt.compare(password, employee.password);
 
-    if (!isMatch) {
-      return res.status(400).json({
+    if (!isPasswordValid) {
+      return res.status(401).json({
         success: false,
-        message: 'Invalid credentials'
+        message: 'Invalid employee ID or password'
       });
     }
 
-    // Create JWT payload
-    const payload = {
-      employee: {
+    // Return employee data (excluding password)
+    res.json({
+      success: true,
+      message: 'Login successful',
+      data: {
         id: employee.id,
         name: employee.name,
         department: employee.department,
         position: employee.position,
-        employeeId: employee.employee_id
+        employee_id: employee.employee_id,
+        date_created: employee.date_created
       }
-    };
-
-    // Sign token
-    jwt.sign(
-      payload,
-      process.env.JWT_SECRET || 'your_jwt_secret',
-      { expiresIn: '1h' },
-      (err, token) => {
-        if (err) throw err;
-        res.json({
-          success: true,
-          token,
-          employee: {
-            id: employee.id,
-            name: employee.name,
-            department: employee.department,
-            position: employee.position,
-            employeeId: employee.employee_id
-          }
-        });
-      }
-    );
+    });
 
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error'
-    });
-  }
-});
-
-// @route   GET /api/auth/me
-// @desc    Get current user
-// @access  Private
-router.get('/me', async (req, res) => {
-  try {
-    const authHeader = req.header('Authorization');
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({
-        success: false,
-        message: 'No token, authorization denied'
-      });
-    }
-
-    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
-
-    if (!token) {
-      return res.status(401).json({
-        success: false,
-        message: 'No token, authorization denied'
-      });
-    }
-
-    // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret');
-    
-    // Get user from database
-    const [rows] = await pool.execute(
-      'SELECT id, name, department, position, employee_id, date_created FROM employees WHERE id = ?',
-      [decoded.employee.id]
-    );
-
-    if (rows.length === 0) {
-      return res.status(401).json({
-        success: false,
-        message: 'Token is not valid'
-      });
-    }
-
-    const employee = rows[0];
-
-    res.json({
-      success: true,
-      employee: employee
-    });
-
-  } catch (error) {
-    console.error('Auth me error:', error);
-    if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({
-        success: false,
-        message: 'Token is not valid'
-      });
-    }
     res.status(500).json({
       success: false,
       message: 'Server error'

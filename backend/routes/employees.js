@@ -62,10 +62,10 @@ router.get('/:id', async (req, res) => {
 // @access  Private
 router.post('/', async (req, res) => {
   try {
-    const { name, department, position, employeeId, password } = req.body;
+    const { name, department, position, employee_Id, password } = req.body;
 
     // Validate required fields
-    if (!name || !department || !position || !employeeId || !password) {
+    if (!name || !department || !position || !employee_Id || !password) {
       return res.status(400).json({
         success: false,
         message: 'Please provide name, department, position, employee ID, and password'
@@ -75,7 +75,7 @@ router.post('/', async (req, res) => {
     // Check if employee ID already exists
     const [existingRows] = await pool.execute(
       'SELECT * FROM employees WHERE employee_id = ?',
-      [employeeId]
+      [employee_Id]
     );
 
     if (existingRows.length > 0) {
@@ -91,7 +91,7 @@ router.post('/', async (req, res) => {
 
     const [result] = await pool.execute(
       'INSERT INTO employees (name, department, position, employee_id, password) VALUES (?, ?, ?, ?, ?)',
-      [name, department, position, employeeId, hashedPassword]
+      [name, department, position, employee_Id, hashedPassword]
     );
 
     res.status(201).json({
@@ -102,7 +102,7 @@ router.post('/', async (req, res) => {
         name,
         department,
         position,
-        employeeId,
+        employee_Id,
         date_created: new Date()
       }
     });
@@ -121,7 +121,7 @@ router.post('/', async (req, res) => {
 // @access  Private
 router.put('/:id', async (req, res) => {
   try {
-    const { name, department, position, employeeId, password } = req.body;
+    const { name, department, position, employee_Id, password } = req.body;
 
     // Check if employee exists
     const [existingRows] = await pool.execute(
@@ -137,10 +137,10 @@ router.put('/:id', async (req, res) => {
     }
 
     // Check if employee ID is being changed and if it already exists
-    if (employeeId && employeeId !== existingRows[0].employee_id) {
+    if (employee_Id && employee_Id !== existingRows[0].employee_id) {
       const [duplicateRows] = await pool.execute(
         'SELECT * FROM employees WHERE employee_id = ? AND id != ?',
-        [employeeId, req.params.id]
+        [employee_Id, req.params.id]
       );
 
       if (duplicateRows.length > 0) {
@@ -160,7 +160,7 @@ router.put('/:id', async (req, res) => {
 
     const [result] = await pool.execute(
       'UPDATE employees SET name = ?, department = ?, position = ?, employee_id = ?, password = ?, updated_at = NOW() WHERE id = ?',
-      [name || existingRows[0].name, department || existingRows[0].department, position || existingRows[0].position, employeeId || existingRows[0].employee_id, hashedPassword, req.params.id]
+      [name || existingRows[0].name, department || existingRows[0].department, position || existingRows[0].position, employee_Id || existingRows[0].employee_id, hashedPassword, req.params.id]
     );
 
     res.json({
@@ -171,7 +171,7 @@ router.put('/:id', async (req, res) => {
         name: name || existingRows[0].name,
         department: department || existingRows[0].department,
         position: position || existingRows[0].position,
-        employeeId: employeeId || existingRows[0].employee_id
+        employee_Id: employee_Id || existingRows[0].employee_id
       }
     });
 

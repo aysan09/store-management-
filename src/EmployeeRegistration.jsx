@@ -5,7 +5,7 @@ export default function EmployeeRegistration({ onBack, onAddEmployee }) {
     name: "",
     department: "",
     position: "",
-    employeeId: "",
+    employee_Id: "",
     password: "",
     confirmPassword: ""
   });
@@ -19,7 +19,7 @@ export default function EmployeeRegistration({ onBack, onAddEmployee }) {
 
   const loadEmployees = async () => {
     try {
-      const response = await fetch('/api/employees');
+      const response = await fetch('http://localhost:5000/api/employees');
       if (response.ok) {
         const data = await response.json();
         setEmployees(data.data || []);
@@ -32,7 +32,7 @@ export default function EmployeeRegistration({ onBack, onAddEmployee }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!form.name || !form.department || !form.position || !form.employeeId || !form.password) {
+    if (!form.name || !form.department || !form.position || !form.employee_Id || !form.password) {
       alert("Please fill in all required fields");
       return;
     }
@@ -45,7 +45,7 @@ export default function EmployeeRegistration({ onBack, onAddEmployee }) {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/employees', {
+      const response = await fetch('http://localhost:5000/api/employees', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -54,10 +54,15 @@ export default function EmployeeRegistration({ onBack, onAddEmployee }) {
           name: form.name,
           department: form.department,
           position: form.position,
-          employeeId: form.employeeId,
+          employee_Id: form.employee_Id,
           password: form.password
         })
       });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
 
       const data = await response.json();
 
@@ -80,7 +85,7 @@ export default function EmployeeRegistration({ onBack, onAddEmployee }) {
           name: "",
           department: "",
           position: "",
-          employeeId: "",
+          employee_Id: "",
           password: "",
           confirmPassword: ""
         });
@@ -91,7 +96,7 @@ export default function EmployeeRegistration({ onBack, onAddEmployee }) {
       }
     } catch (error) {
       console.error('Error registering employee:', error);
-      alert("An error occurred while registering the employee");
+      alert(`Registration failed: ${error.message}\n\nPlease ensure:\n1. Backend server is running on port 5000\n2. Database is accessible\n3. Check browser console for more details`);
     } finally {
       setLoading(false);
     }
@@ -148,8 +153,8 @@ export default function EmployeeRegistration({ onBack, onAddEmployee }) {
                 <input 
                   className="field-input" 
                   placeholder="Enter employee ID" 
-                  value={form.employeeId}
-                  onChange={e => setForm({...form, employeeId: e.target.value})} 
+                  value={form.employee_Id}
+                  onChange={e => setForm({...form, employee_Id: e.target.value})} 
                   required 
                 />
               </div>
