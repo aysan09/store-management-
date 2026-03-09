@@ -4,25 +4,51 @@ export default function RequestForm({ onBack, onViewStatus, items, onAddRequest 
   const [selectedId, setSelectedId] = useState(items[0]?.id || "");
   const [quantity, setQuantity] = useState(1);
   const [purpose, setPurpose] = useState("");
-  const currentItem = items.find(item => item.id === parseInt(selectedId)) || items[0];
+  const currentItem = items.find(item => String(item.id) === String(selectedId)) || items[0];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (onAddRequest && currentItem) {
-      const currentDate = new Date().toISOString().split('T')[0];
-      const newRequest = {
-        employeeName: "Current User", // This would come from context/auth in a real app
-        itemName: currentItem.model,
-        quantity: parseInt(quantity),
-        purpose: purpose,
-        status: "Pending",
-        dateAdded: currentDate, // Track when request was added
-        dateApproved: null,     // Will be set when approved
-        dateFinished: null      // Will be set when finished/distributed
-      };
+    if (currentItem) {
+      try {
+        const currentDate = new Date().toISOString().split('T')[0];
+        const newRequest = {
+          employeeName: "Current User", // This would come from context/auth in a real app
+          itemName: currentItem.model,
+          quantity: parseInt(quantity),
+          purpose: purpose,
+          status: "Pending",
+          dateAdded: currentDate
+        };
 
+        // Save to database via API (using proxy)
+        const response = await fetch('/api/requests', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(newRequest)
+        });
 
-      onAddRequest(newRequest);
+        const result = await response.json();
+        
+        if (result.success) {
+          // Add to local state with the server-generated ID
+          const fullRequest = {
+            ...newRequest,
+            id: result.data.id,
+            dateApproved: null,
+            dateFinished: null
+          };
+          
+          onAddRequest(fullRequest);
+          alert('Request submitted successfully!');
+        } else {
+          alert('Error submitting request: ' + result.message);
+        }
+      } catch (error) {
+        console.error('Error submitting request:', error);
+        alert('Error submitting request. Please try again.');
+      }
     }
   };
 
@@ -33,39 +59,41 @@ export default function RequestForm({ onBack, onViewStatus, items, onAddRequest 
       <div className="request-layout">
         <div className="request-card-form">
           <h2 className="form-sub">Employee Request Form</h2>
-          <div className="form-group">
-            <label>Select Item</label>
-            <select 
-              value={selectedId} 
-              onChange={(e) => setSelectedId(e.target.value)} 
-              className="request-select"
-            >
-              {items.map(item => (
-                <option key={item.id} value={item.id}>{item.model}</option>
-              ))}
-            </select>
-          </div>
-          <div className="form-group">
-            <label>Quantity</label>
-            <input 
-              type="number" 
-              min="1" 
-              value={quantity} 
-              onChange={(e) => setQuantity(e.target.value)} 
-              className="request-select"
-              style={{height: '40px'}}
-            />
-          </div>
-          <div className="form-group">
-            <label>Purpose</label>
-            <textarea 
-              className="request-textarea" 
-              placeholder="Why do you need this?"
-              value={purpose}
-              onChange={(e) => setPurpose(e.target.value)}
-            ></textarea>
-          </div>
-          <button className="add-request-btn" onClick={handleSubmit}>Add</button>
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label>Select Item</label>
+              <select 
+                value={selectedId} 
+                onChange={(e) => setSelectedId(e.target.value)} 
+                className="request-select"
+              >
+                {items.map(item => (
+                  <option key={item.id} value={item.id}>{item.model}</option>
+                ))}
+              </select>
+            </div>
+            <div className="form-group">
+              <label>Quantity</label>
+              <input 
+                type="number" 
+                min="1" 
+                value={quantity} 
+                onChange={(e) => setQuantity(e.target.value)} 
+                className="request-select"
+                style={{height: '40px'}}
+              />
+            </div>
+            <div className="form-group">
+              <label>Purpose</label>
+              <textarea 
+                className="request-textarea" 
+                placeholder="Why do you need this?"
+                value={purpose}
+                onChange={(e) => setPurpose(e.target.value)}
+              ></textarea>
+            </div>
+            <button type="submit" className="add-request-btn">Add</button>
+          </form>
           <div className="status-link">
             <span 
               onClick={onViewStatus} 
@@ -80,7 +108,7 @@ export default function RequestForm({ onBack, onViewStatus, items, onAddRequest 
           <div className="preview-content">
             {currentItem && (
               <>
-                <img src={currentItem.photo} alt={currentItem.model} className="preview-img" />
+                <img src={currentItem.photo ? `${window.location.protocol}//${window.location.hostname}:5000${currentItem.photo}` : "https://via.placeholder.com/150"} alt={currentItem.model} className="preview-img" />
                 <h3 className="preview-model">{currentItem.model.toUpperCase()}</h3>
                 <p className="preview-qty">QUANTITY: {currentItem.quantity}</p>
               </>

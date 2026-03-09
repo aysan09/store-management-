@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Login from './Login';
 import StorePage from './StorePage';
 import StoreManagerPage from './StoreManagerPage';
@@ -30,6 +30,82 @@ export default function App() {
     { id: 2, name: "Store Manager", department: "Store", position: "Manager", employeeId: "STORE100", password: "store123", dateCreated: "2024-02-26" }
   ]);
 
+  // Fetch items, requests, and employees from database on app initialization
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        console.log('Fetching data from database...');
+
+        // Fetch items
+        const itemsResponse = await fetch('/api/items');
+        console.log('Items response status:', itemsResponse.status);
+        if (itemsResponse.ok) {
+          const itemsResult = await itemsResponse.json();
+          console.log('Items result:', itemsResult);
+          if (itemsResult.success) {
+            setInventory(itemsResult.data);
+            console.log('Inventory updated with:', itemsResult.data.length, 'items');
+          }
+        } else {
+          console.error('Failed to fetch items:', itemsResponse.status);
+        }
+
+        // Fetch requests
+        const requestsResponse = await fetch('localhost:5000/api/requests');
+        console.log('Requests response status:', requestsResponse.status);
+        if (requestsResponse.ok) {
+          const requestsResult = await requestsResponse.json();
+          console.log('Requests result:', requestsResult);
+          if (requestsResult.success) {
+            // Transform database field names to frontend field names
+            const transformedRequests = requestsResult.data.map(req => ({
+              id: req.id,
+              employeeName: req.employee_name,
+              itemName: req.item_name,
+              quantity: req.quantity,
+              status: req.status,
+              dateAdded: req.date_added,
+              dateApproved: req.date_approved,
+              dateFinished: req.date_finished,
+              purpose: req.purpose || 'N/A'
+            }));
+            setRequests(transformedRequests);
+            console.log('Requests updated with:', transformedRequests.length, 'requests');
+          }
+        } else {
+          console.error('Failed to fetch requests:', requestsResponse.status);
+        }
+
+        // Fetch employees
+        const employeesResponse = await fetch('/api/employees');
+        console.log('Employees response status:', employeesResponse.status);
+        if (employeesResponse.ok) {
+          const employeesResult = await employeesResponse.json();
+          console.log('Employees result:', employeesResult);
+          if (employeesResult.success) {
+            // Transform database field names to frontend field names
+            const transformedEmployees = employeesResult.data.map(emp => ({
+              id: emp.id,
+              name: emp.name,
+              department: emp.department,
+              position: emp.position,
+              employeeId: emp.employee_id,
+              dateCreated: emp.date_created
+            }));
+            setEmployees(transformedEmployees);
+            console.log('Employees updated with:', transformedEmployees.length, 'employees');
+          }
+        } else {
+          console.error('Failed to fetch employees:', employeesResponse.status);
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
   // Function to mark a request as finished
   const markRequestFinished = (employeeName, itemName, quantity) => {
     const currentDate = new Date().toISOString().split('T')[0];
@@ -46,38 +122,78 @@ export default function App() {
   };
 
   // Logic to handle login and role redirection
-  const handleLoginSuccess = (userData) => {
+  const handleLoginSuccess = async (userData) => {
     // Validate input data
     if (!userData || !userData.id || !userData.password) {
       alert('Please enter both employee ID and password.');
       return;
     }
     
-    // Find the employee in the registered employees list
-    const employee = employees.find(emp => 
-      emp.employeeId === userData.id
-    );
-    
-    // Check if employee exists and password matches
-    if (employee && employee.password === userData.password) {
-      setUser(employee);
-      
-      // Role-based navigation based on employee position/department
-      const position = employee.position.toLowerCase().trim();
-      const department = employee.department.toLowerCase().trim();
-      
-      // Determine role and navigate accordingly
-      let targetView = 'store'; // Default view for regular employees
-      
-      if (department.includes('hr') || position.includes('hr')) {
-        targetView = 'hr-reviews';
-      } else if (department.includes('store') && position.includes('manager')) {
-        targetView = 'store-manager';
+    try {
+      // Authenticate against the backend API
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          employee_id: userData.id,
+          password: userData.password
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          const employee = result.data;
+          setUser(employee);
+          
+          // Role-based navigation based on employee position/department
+          const position = employee.position.toLowerCase().trim();
+          const department = employee.department.toLowerCase().trim();
+          
+          // Determine role and navigate accordingly
+          let targetView = 'store'; // Default view for regular employees
+          
+          if (department.includes('hr') || position.includes('hr')) {
+            targetView = 'hr-reviews';
+          } else if (department.includes('store') && position.includes('manager')) {
+            targetView = 'store-manager';
+          }
+          
+          setView(targetView);
+        } else {
+          alert(result.message || 'Invalid employee ID or password. Please try again.');
+        }
+      } else {
+        // Fallback to local authentication if API is not available
+        const employee = employees.find(emp => {
+          const employeeId = emp.employeeId || emp.employee_id;
+          return employeeId === userData.id;
+        });
+        
+        if (employee && employee.password === userData.password) {
+          setUser(employee);
+          
+          const position = employee.position.toLowerCase().trim();
+          const department = employee.department.toLowerCase().trim();
+          
+          let targetView = 'store';
+          
+          if (department.includes('hr') || position.includes('hr')) {
+            targetView = 'hr-reviews';
+          } else if (department.includes('store') && position.includes('manager')) {
+            targetView = 'store-manager';
+          }
+          
+          setView(targetView);
+        } else {
+          alert('Invalid employee ID or password. Please try again.');
+        }
       }
-      
-      setView(targetView);
-    } else {
-      alert('Invalid employee ID or password. Please try again.');
+    } catch (error) {
+      console.error('Login error:', error);
+      alert('Login failed. Please check your connection and try again.');
     }
   };
 

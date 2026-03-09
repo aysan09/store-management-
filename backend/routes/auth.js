@@ -10,11 +10,11 @@ const router = express.Router();
 router.post('/login', async (req, res) => {
   try {
     console.log('Auth request received:', req.body);
-    const { employee_Id, password } = req.body;
+    const { employee_id, password } = req.body;
 
     // Validate required fields
-    if (!employee_Id || !password) {
-      console.log('Missing fields:', { employee_Id, password });
+    if (!employee_id || !password) {
+      console.log('Missing fields:', { employee_id, password });
       return res.status(400).json({
         success: false,
         message: 'Please provide employee ID and password'
@@ -24,7 +24,7 @@ router.post('/login', async (req, res) => {
     // Find employee by employee ID
     const [rows] = await pool.execute(
       'SELECT id, name, department, position, employee_id, password, date_created FROM employees WHERE employee_id = ?',
-      [employee_Id]
+      [employee_id]
     );
 
     if (rows.length === 0) {

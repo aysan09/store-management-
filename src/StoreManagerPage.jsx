@@ -1,9 +1,59 @@
 import React from "react";
 
 export default function StoreManagerPage({ onBack, inventory, setInventory, onViewRequests, onAddItem, onViewFinished, approvedRequests, onMarkFinished }) {
-  const handleDelete = (id) => {
+  
+  // Function to update item quantity in database
+  const handleQuantityUpdate = async (itemId, newQuantity) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/items/${itemId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: inventory.find(item => item.id === itemId)?.model,
+          brand: inventory.find(item => item.id === itemId)?.brand,
+          category: inventory.find(item => item.id === itemId)?.category,
+          quantity: newQuantity
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        // Update local state
+        setInventory(inventory.map(item => 
+          item.id === itemId ? { ...item, quantity: newQuantity } : item
+        ));
+      } else {
+        alert('Error updating item: ' + result.message);
+      }
+    } catch (error) {
+      console.error('Error updating item:', error);
+      alert('Error updating item. Please try again.');
+    }
+  };
+
+  // Function to delete item from database
+  const handleDelete = async (id) => {
     if (window.confirm("Delete this item?")) {
-      setInventory(inventory.filter(item => item.id !== id));
+      try {
+        const response = await fetch(`http://localhost:5000/api/items/${id}`, {
+          method: 'DELETE'
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+          setInventory(inventory.filter(item => item.id !== id));
+          alert('Item deleted successfully!');
+        } else {
+          alert('Error deleting item: ' + result.message);
+        }
+      } catch (error) {
+        console.error('Error deleting item:', error);
+        alert('Error deleting item. Please try again.');
+      }
     }
   };
 
@@ -68,18 +118,17 @@ export default function StoreManagerPage({ onBack, inventory, setInventory, onVi
           </div>
           {inventory.map(item => (
             <div className="table-row" key={item.id}>
-              <img src={item.photo} alt="" style={{width: '40px'}} />
+              <img src={item.photo ? `${window.location.protocol}//${window.location.hostname}:5000${item.photo}` : "https://via.placeholder.com/40x40?text=No+Image"} alt="" style={{width: '40px', height: '40px', objectFit: 'cover'}} />
               <div>{item.model}</div><div>{item.brand}</div>
               <div>
                 <input 
                   type="number" 
                   value={item.quantity} 
-                  onChange={(e) => {
+                  onChange={async (e) => {
                     const newQuantity = parseInt(e.target.value);
                     if (!isNaN(newQuantity) && newQuantity >= 0) {
-                      setInventory(inventory.map(invItem => 
-                        invItem.id === item.id ? { ...invItem, quantity: newQuantity } : invItem
-                      ));
+                      // Update database first
+                      await handleQuantityUpdate(item.id, newQuantity);
                     }
                   }}
                   style={{width: '60px', padding: '2px', border: '1px solid #ccc', borderRadius: '4px'}}

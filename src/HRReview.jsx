@@ -2,21 +2,50 @@ import React from 'react';
 
 export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, onEmployeeManagement, pendingRequests, setRequests }) {
   const handleAction = async (employeeName, itemName, quantity, status) => {
-    const currentDate = new Date().toISOString().split('T')[0];
-    
-    setRequests(prev => prev.map(req => 
-      req.employeeName === employeeName && req.itemName === itemName && req.quantity === quantity 
-        ? { 
-            ...req, 
-            status,
-            ...(status === 'Approved' && { dateApproved: currentDate }) // Set approval date
-          } 
-        : req
-    ));
+    try {
+      // Find the request to get its ID
+      const request = pendingRequests.find(req => 
+        req.employeeName === employeeName && 
+        req.itemName === itemName && 
+        req.quantity === quantity
+      );
 
-    // Handle notification logic here if needed
-    // For now, just log the action
-    console.log(`Action: ${status} for ${employeeName} - ${itemName} x${quantity}`);
+      if (!request) {
+        alert('Request not found');
+        return;
+      }
+
+      // Update status in database
+      const response = await fetch(`http://localhost:5000/api/requests/${request.id}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        // Update local state
+        setRequests(prev => prev.map(req => 
+          req.id === request.id 
+            ? { 
+                ...req, 
+                status,
+                ...(status === 'Approved' && { dateApproved: new Date().toISOString().split('T')[0] })
+              } 
+            : req
+        ));
+        
+        alert(`Request ${status.toLowerCase()} successfully!`);
+      } else {
+        alert('Error updating request: ' + result.message);
+      }
+    } catch (error) {
+      console.error('Error updating request:', error);
+      alert('Error updating request. Please try again.');
+    }
   };
 
   // Filter to show only pending requests

@@ -37,7 +37,7 @@ async function testConnection() {
 async function initDatabase() {
   try {
     const connection = await pool.getConnection();
-    
+
     // Create employees table
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS employees (
@@ -66,17 +66,60 @@ async function initDatabase() {
       )
     `);
 
-    // Create requests table
+    // Create requests table (legacy table for backward compatibility)
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS requests (
         id INT AUTO_INCREMENT PRIMARY KEY,
         employee_name VARCHAR(100) NOT NULL,
         item_name VARCHAR(100) NOT NULL,
         quantity INT NOT NULL,
+        purpose TEXT,
         status ENUM('Pending', 'Approved', 'Rejected', 'Finished') DEFAULT 'Pending',
         date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         date_approved TIMESTAMP NULL,
         date_finished TIMESTAMP NULL,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create pending_requests table
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS pending_requests (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        employee_name VARCHAR(100) NOT NULL,
+        item_name VARCHAR(100) NOT NULL,
+        quantity INT NOT NULL,
+        purpose TEXT,
+        date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create approved_requests table
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS approved_requests (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        employee_name VARCHAR(100) NOT NULL,
+        item_name VARCHAR(100) NOT NULL,
+        quantity INT NOT NULL,
+        purpose TEXT,
+        date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        date_approved TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create finished_requests table
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS finished_requests (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        employee_name VARCHAR(100) NOT NULL,
+        item_name VARCHAR(100) NOT NULL,
+        quantity INT NOT NULL,
+        purpose TEXT,
+        date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        date_approved TIMESTAMP NULL,
+        date_finished TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
     `);
@@ -87,7 +130,7 @@ async function initDatabase() {
       const bcrypt = require('bcryptjs');
       const hrPassword = await bcrypt.hash('hr123', 10);
       const storePassword = await bcrypt.hash('store123', 10);
-      
+
       await connection.execute(`
         INSERT INTO employees (name, department, position, employee_id, password) VALUES
         (?, ?, ?, ?, ?),

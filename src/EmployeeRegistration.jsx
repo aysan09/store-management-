@@ -54,7 +54,7 @@ export default function EmployeeRegistration({ onBack, onAddEmployee }) {
           name: form.name,
           department: form.department,
           position: form.position,
-          employee_Id: form.employee_Id,
+          employee_id: form.employee_Id,
           password: form.password
         })
       });

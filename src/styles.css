@@ -13,13 +13,15 @@ html,
 body,
 #root {
   height: 100%;
+  letter-spacing: 1px;
+  font-family:'Electrolize';
 }
 
-/* make page fit viewport and prevent page scrolling */
+/* make page fit viewport and allow scrolling */
 html,
 body {
   height: 100%;
-  overflow: hidden
+  overflow: auto
 }
 
 body {
@@ -32,7 +34,12 @@ body {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  overflow: hidden
+  overflow-y: scroll;
+  scroll-behavior:unset;
+  font-family:'Electrolize';
+  font-size: medium;
+  
+
 }
 
 .topbar {
@@ -47,6 +54,26 @@ body {
   object-fit: contain
 }
 
+.topbar-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.about-btn {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.about-btn:hover {
+  background: #545b62;
+}
+
 .login {
   background: var(--blue);
   color: white;
@@ -55,7 +82,8 @@ body {
   border-radius: 28px;
   font-size: 16px;
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 600;
+  font-family:'Electrolize';
 }
 .login:hover {
   background: var(--white);
@@ -77,7 +105,8 @@ body {
   justify-content: space-between;
   padding: 0px 80px;
   flex: 1;
-  overflow: hidden
+  position: sticky;
+
 }
 
 .hero-left {
@@ -99,7 +128,9 @@ body {
   border-radius: 28px;
   font-size: 16px;
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 600;
+  margin-top: 60px;
+  margin-left: 50px;
 }
 
 .cta:hover {
@@ -256,6 +287,346 @@ body {
 
   .page {
     height: 100vh
+  }
+}
+
+/* About Section Styles */
+.about-section {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  padding: 80px 40px;
+  min-height: 60vh;
+  position: sticky;
+}
+
+.about-content {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.about-content h2 {
+  text-align: center;
+  color: #1e40af;
+  font-size: 40px;
+  margin-bottom: 20px;
+  font-weight: 700;
+}
+
+.about-description {
+  text-align: center;
+  color: #374151;
+  font-size: 18px;
+  margin-bottom: 60px;
+  line-height: 1.6;
+}
+
+.about-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 30px;
+  margin-bottom: 80px;
+}
+
+.stat-card {
+  background: white;
+  padding: 40px 20px;
+  border-radius: 20px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transform: translateY(30px);
+  opacity: 0;
+  animation: fadeInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.stat-card.animate-in {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+}
+
+.stat-card h3 {
+  color: #1e40af;
+  font-size: 48px;
+  margin: 0 0 10px 0;
+  font-weight: 800;
+}
+
+.stat-card p {
+  color: #070707;
+  font-size: 17px;
+  margin: 0;
+  font-weight: 600;
+  font-weight: bolder;
+}
+
+.about-features {
+  margin-bottom: 80px;
+  font-size: medium;
+  transform: translateY(40px);
+  opacity: 0;
+  transition: transform 0.8s ease, opacity 0.8s ease;
+}
+
+.about-features.animate-in {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.about-features h3 {
+  text-align: center;
+  color: #1e40af;
+  font-size: 32px;
+  margin-bottom: 40px;
+  font-weight: 700;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 30px;
+}
+
+.feature-card {
+  background: white;
+  padding: 30px;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transform: translateY(30px);
+  opacity: 0;
+  animation: fadeInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.feature-card.animate-in {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.feature-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+}
+
+.feature-card h4 {
+  color: #1e40af;
+  font-size: 24px;
+  margin: 0 0 15px 0;
+  font-weight: 700;
+}
+
+.feature-card p {
+  color: #070707;
+  font-size:17px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.about-team {
+  background: white;
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  transform: translateY(40px);
+  opacity: 0;
+  transition: transform 0.8s ease, opacity 0.8s ease;
+  bottom: 15px;
+  position: relative;
+}
+
+.about-team.animate-in {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.about-team h3 {
+  text-align: center;
+  color: #1e40af;
+  font-size: 32px;
+  margin-bottom: 20px;
+  font-weight: 700;
+}
+
+.team-description {
+  text-align: center;
+  color: #080808;
+  font-size: 18px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Scroll Animation Keyframes */
+@keyframes fadeInUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInLeft {
+  from {
+    transform: translateX(-30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInRight {
+  from {
+    transform: translateX(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInScale {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Enhanced hover effects with animation */
+.stat-card, .feature-card {
+  will-change: transform, opacity;
+}
+
+.stat-card:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.stat-card:nth-child(2) {
+  animation-delay: 0.3s;
+}
+
+.stat-card:nth-child(3) {
+  animation-delay: 0.5s;
+}
+
+.feature-card:nth-child(1) {
+  animation-delay: 0.2s;
+}
+
+.feature-card:nth-child(2) {
+  animation-delay: 0.4s;
+}
+
+.feature-card:nth-child(3) {
+  animation-delay: 0.6s;
+}
+
+.feature-card:nth-child(4) {
+  animation-delay: 0.8s;
+}
+
+/* Responsive About Section Styles */
+@media (max-width: 768px) {
+  .about-section {
+    padding: 60px 20px;
+  }
+  
+  .about-content h2 {
+    font-size: 32px;
+  }
+  
+  .about-description {
+    font-size: 16px;
+  }
+  
+  .about-stats {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .stat-card {
+    padding: 30px 20px;
+  }
+  
+  .stat-card h3 {
+    font-size: 36px;
+  }
+  
+  .about-features h3 {
+    font-size: 28px;
+  }
+  
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .feature-card {
+    padding: 25px;
+  }
+  
+  .feature-card h4 {
+    font-size: 20px;
+  }
+  
+  .about-team {
+    padding: 30px 20px;
+  }
+  
+  .about-team h3 {
+    font-size: 28px;
+  }
+  
+  .team-description {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .about-section {
+    padding: 40px 15px;
+  }
+  
+  .about-content h2 {
+    font-size: 28px;
+  }
+  
+  .about-stats {
+    gap: 15px;
+  }
+  
+  .stat-card {
+    padding: 25px 15px;
+  }
+  
+  .stat-card h3 {
+    font-size: 32px;
+  }
+  
+  .about-features h3 {
+    font-size: 24px;
+  }
+  
+  .feature-card {
+    padding: 20px;
+  }
+  
+  .feature-card h4 {
+    font-size: 18px;
+  }
+  
+  .about-team h3 {
+    font-size: 24px;
   }
 }
 
@@ -735,7 +1106,7 @@ body {
 
 .request-layout {
   display: flex;
-  gap: 30px;
+  gap: 60px;
   justify-content: center;
   align-items: flex-start;
   flex-wrap: wrap;
@@ -753,12 +1124,15 @@ body {
 
 .request-card-form {
   order: 2; /* Form comes second on mobile */
+  scale: 1.1;
+  font-family:'Electrolize';
 }
 
 .preview-card {
   order: 1; /* Preview comes first on mobile */
   text-align: center;
   max-width: 320px;
+  scale: 1.1;
 }
 
 /* Responsive request form layout */

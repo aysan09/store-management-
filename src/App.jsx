@@ -12,6 +12,7 @@ import FinishedRequests from './FinishedRequests';
 import HeroPage from './HeroPage';
 import EmployeeRegistration from './EmployeeRegistration';
 import HREmployees from './HREmployees';
+import AboutPage from './AboutPage';
 
 export default function App() {
   const [view, setView] = useState('hero');
@@ -23,16 +24,20 @@ export default function App() {
       const hash = window.location.hash.replace('#', '');
       if (hash) {
         setView(hash);
+      } else {
+        setView('hero'); // Default to hero if no hash
       }
     };
 
     // Listen for hash changes
     window.addEventListener('hashchange', handleHashChange);
     
-    // Set initial view from hash if present
+    // Set initial view from hash if present, otherwise default to hero
     const initialHash = window.location.hash.replace('#', '');
     if (initialHash) {
       setView(initialHash);
+    } else {
+      setView('hero');
     }
 
     return () => window.removeEventListener('hashchange', handleHashChange);
@@ -69,14 +74,14 @@ export default function App() {
   // Logic to handle login and role redirection
   const handleLoginSuccess = async (userData) => {
     try {
-      // Use the proper authentication endpoint
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      // Use the proxy endpoint (Vite will proxy this to localhost:5000)
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          employee_Id: userData.id,
+          employee_id: userData.id,
           password: userData.password
         })
       });
@@ -211,6 +216,7 @@ export default function App() {
         onBack={handleLogout} 
         onViewRecords={() => navigateTo('hr-records')}
         onRegisterEmployee={() => navigateTo('employee-registration')}
+        onEmployeeManagement={() => navigateTo('employee-management')}
         pendingRequests={requests}
         setRequests={setRequests}
       />
@@ -243,8 +249,8 @@ export default function App() {
     );
   }
 
-  // Default Hero Page
+  // Default Hero Page with About Section
   return (
-    <HeroPage onLoginClick={() => setView('login')} />
+    <HeroPage onLoginClick={() => setView('login')} onAboutClick={() => setView('about')} />
   );
 }

@@ -2,6 +2,7 @@ import React from 'react';
 import "./styles.css";
 
 export default function RequestStatus({ onBack, requests }) {
+  console.log('RequestStatus received requests:', requests);
   return (
     <div className="status-page">
       <button className="back-btn" onClick={onBack} style={{ margin: '20px' }}>←</button>

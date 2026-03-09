@@ -2,17 +2,54 @@ import React, { useState } from 'react';
 
 export default function AddItemPage({ onBack, onSave, onViewRequests }) {
   const [form, setForm] = useState({ model: "", brand: "", category: "", quantity: "" });
+  const [photoFile, setPhotoFile] = useState(null);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (form.model && form.brand && form.quantity) {
-      onSave({
-        ...form, 
-        id: Date.now(), 
-        quantity: parseInt(form.quantity),
-        photo: form.photo || "https://via.placeholder.com/150"
-      });
-      setForm({ model: "", brand: "", category: "", quantity: "", photo: "" });
+      try {
+        // Prepare form data for API
+        const formData = new FormData();
+        formData.append('model', form.model);
+        formData.append('brand', form.brand);
+        formData.append('category', form.category);
+        formData.append('quantity', form.quantity);
+        
+        // Add photo if provided
+        if (photoFile) {
+          formData.append('photo', photoFile);
+        }
+
+        // Save to database via API (using proxy)
+        const response = await fetch('/api/items', {
+          method: 'POST',
+          body: formData
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+          // Add to local state with the server-generated ID
+          const photoUrl = result.data.photo 
+            ? `${window.location.protocol}//${window.location.hostname}:5000${result.data.photo}`
+            : "https://via.placeholder.com/150";
+          
+          onSave({
+            ...form, 
+            id: result.data.id, 
+            quantity: parseInt(form.quantity),
+            photo: photoUrl
+          });
+          setForm({ model: "", brand: "", category: "", quantity: "" });
+          setPhotoFile(null);
+          alert('Item added successfully!');
+        } else {
+          alert('Error adding item: ' + result.message);
+        }
+      } catch (error) {
+        console.error('Error adding item:', error);
+        alert('Error adding item. Please try again.');
+      }
     }
   };
 
@@ -76,6 +113,8 @@ export default function AddItemPage({ onBack, onSave, onViewRequests }) {
               accept="image/*"
               onChange={(e) => {
                 const file = e.target.files[0];
+                setPhotoFile(file);
+                
                 if (file) {
                   const reader = new FileReader();
                   reader.onload = (event) => {
