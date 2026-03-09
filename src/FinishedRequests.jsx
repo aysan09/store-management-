@@ -1,6 +1,9 @@
 import React from 'react';
 
 export default function FinishedRequests({ onBack, finishedRequests }) {
+  // Use the finishedRequests passed as props instead of fetching separately
+  const displayRequests = finishedRequests || [];
+
   return (
     <div className="status-page">
       <header className="status-header-row">
@@ -21,8 +24,8 @@ export default function FinishedRequests({ onBack, finishedRequests }) {
           <div>Status</div>
         </div>
 
-        {finishedRequests && finishedRequests.length > 0 ? (
-          finishedRequests.map((req, index) => (
+        {displayRequests.length > 0 ? (
+          displayRequests.map((req, index) => (
             <div className="hr-table-row" key={index}>
               <div>{req.employeeName}</div>
               <div>{req.itemName}</div>

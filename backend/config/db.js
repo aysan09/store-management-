@@ -1,4 +1,5 @@
 const mysql = require('mysql2/promise');
+const bcrypt = require('bcryptjs');
 
 // Database connection configuration
 const dbConfig = {
@@ -66,7 +67,7 @@ async function initDatabase() {
       )
     `);
 
-    // Create requests table (legacy table for backward compatibility)
+    // Create unified requests table with status column
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS requests (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -74,7 +75,7 @@ async function initDatabase() {
         item_name VARCHAR(100) NOT NULL,
         quantity INT NOT NULL,
         purpose TEXT,
-        status ENUM('Pending', 'Approved', 'Rejected', 'Finished') DEFAULT 'Pending',
+        status ENUM('Pending', 'Approved', 'Finished') DEFAULT 'Pending',
         date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         date_approved TIMESTAMP NULL,
         date_finished TIMESTAMP NULL,
@@ -82,52 +83,9 @@ async function initDatabase() {
       )
     `);
 
-    // Create pending_requests table
-    await connection.execute(`
-      CREATE TABLE IF NOT EXISTS pending_requests (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        employee_name VARCHAR(100) NOT NULL,
-        item_name VARCHAR(100) NOT NULL,
-        quantity INT NOT NULL,
-        purpose TEXT,
-        date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      )
-    `);
-
-    // Create approved_requests table
-    await connection.execute(`
-      CREATE TABLE IF NOT EXISTS approved_requests (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        employee_name VARCHAR(100) NOT NULL,
-        item_name VARCHAR(100) NOT NULL,
-        quantity INT NOT NULL,
-        purpose TEXT,
-        date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        date_approved TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      )
-    `);
-
-    // Create finished_requests table
-    await connection.execute(`
-      CREATE TABLE IF NOT EXISTS finished_requests (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        employee_name VARCHAR(100) NOT NULL,
-        item_name VARCHAR(100) NOT NULL,
-        quantity INT NOT NULL,
-        purpose TEXT,
-        date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        date_approved TIMESTAMP NULL,
-        date_finished TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      )
-    `);
-
     // Insert default employees if table is empty
     const [employeeCount] = await connection.execute('SELECT COUNT(*) as count FROM employees');
     if (employeeCount[0].count === 0) {
-      const bcrypt = require('bcryptjs');
       const hrPassword = await bcrypt.hash('hr123', 10);
       const storePassword = await bcrypt.hash('store123', 10);
 

@@ -7,7 +7,7 @@ const { pool } = require('../config/db');
 const router = express.Router();
 
 // Ensure uploads directory exists
-const uploadsDir = path.join(__dirname, '../uploads');
+const uploadsDir = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
@@ -22,7 +22,7 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ 
+const upload = multer({
   storage: storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
   fileFilter: function (req, file, cb) {
@@ -42,7 +42,7 @@ router.get('/', async (req, res) => {
     const [rows] = await pool.execute(
       'SELECT * FROM items ORDER BY date_added DESC'
     );
-    
+
     res.json({
       success: true,
       count: rows.length,

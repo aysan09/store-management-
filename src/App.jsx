@@ -228,6 +228,7 @@ export default function App() {
       <HRRecords 
         onBack={handleLogout} 
         allRequests={requests}
+        onGoToHRReview={() => setView('hr-reviews')}
       />
     );
   }

@@ -19,7 +19,7 @@ export default function EmployeeRegistration({ onBack, onAddEmployee }) {
 
   const loadEmployees = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/employees');
+      const response = await fetch('/api/employees');
       if (response.ok) {
         const data = await response.json();
         setEmployees(data.data || []);
@@ -45,7 +45,7 @@ export default function EmployeeRegistration({ onBack, onAddEmployee }) {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/employees', {
+      const response = await fetch('/api/employees', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

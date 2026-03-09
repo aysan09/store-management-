@@ -31,7 +31,7 @@ export default function AddItemPage({ onBack, onSave, onViewRequests }) {
         if (result.success) {
           // Add to local state with the server-generated ID
           const photoUrl = result.data.photo 
-            ? `${window.location.protocol}//${window.location.hostname}:5000${result.data.photo}`
+            ? `/uploads${result.data.photo}`
             : "https://via.placeholder.com/150";
           
           onSave({

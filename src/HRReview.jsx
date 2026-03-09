@@ -15,14 +15,32 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
         return;
       }
 
-      // Update status in database
-      const response = await fetch(`http://localhost:5000/api/requests/${request.id}/status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status })
-      });
+      let response;
+      let successMessage;
+
+      if (status === 'Approved') {
+        // Approve the request
+        response = await fetch(`/api/requests/${request.id}/approve`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({})
+        });
+        successMessage = 'Request approved successfully!';
+      } else if (status === 'Rejected') {
+        // Reject the request (delete it)
+        response = await fetch(`/api/requests/${request.id}/reject`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+        successMessage = 'Request rejected successfully!';
+      } else {
+        alert('Invalid status');
+        return;
+      }
 
       const result = await response.json();
       
@@ -38,7 +56,7 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
             : req
         ));
         
-        alert(`Request ${status.toLowerCase()} successfully!`);
+        alert(successMessage);
       } else {
         alert('Error updating request: ' + result.message);
       }

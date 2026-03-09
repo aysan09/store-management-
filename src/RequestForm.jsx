@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { getImageUrl } from './config';
 
-export default function RequestForm({ onBack, onViewStatus, items, onAddRequest }) {
+export default function RequestForm({ onBack, onViewStatus, items, onAddRequest, user }) {
   const [selectedId, setSelectedId] = useState(items[0]?.id || "");
   const [quantity, setQuantity] = useState(1);
   const [purpose, setPurpose] = useState("");
@@ -12,7 +13,7 @@ export default function RequestForm({ onBack, onViewStatus, items, onAddRequest 
       try {
         const currentDate = new Date().toISOString().split('T')[0];
         const newRequest = {
-          employeeName: "Current User", // This would come from context/auth in a real app
+          employeeName: user ? user.name : "Unknown User",
           itemName: currentItem.model,
           quantity: parseInt(quantity),
           purpose: purpose,
@@ -108,7 +109,7 @@ export default function RequestForm({ onBack, onViewStatus, items, onAddRequest 
           <div className="preview-content">
             {currentItem && (
               <>
-                <img src={currentItem.photo ? `${window.location.protocol}//${window.location.hostname}:5000${currentItem.photo}` : "https://via.placeholder.com/150"} alt={currentItem.model} className="preview-img" />
+                <img src={getImageUrl(currentItem.photo)} alt={currentItem.model} className="preview-img" />
                 <h3 className="preview-model">{currentItem.model.toUpperCase()}</h3>
                 <p className="preview-qty">QUANTITY: {currentItem.quantity}</p>
               </>

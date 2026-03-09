@@ -1,14 +1,14 @@
 import React from 'react';
 import "./styles.css";
 
-export default function HRRecords({ onBack, allRequests }) {
+export default function HRRecords({ onBack, allRequests, onGoToHRReview }) {
   // Filter for requests that are NOT pending
   const records = allRequests.filter(req => req.status !== "Pending");
 
   return (
     <div className="status-page">
       <header className="status-header-row">
-        <button className="back-btn" onClick={onBack}>← Back</button>
+        <button className="back-btn" onClick={onGoToHRReview || onBack}>← Back to HR Review</button>
         <h1 className="status-main-title">Request Records</h1>
         <div style={{ width: '80px' }}></div> {/* Spacer for symmetry */}
       </header>

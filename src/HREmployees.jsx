@@ -19,7 +19,7 @@ export default function HREmployees({ onBack }) {
   const loadEmployees = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/employees');
+      const response = await fetch('/api/employees');
       if (response.ok) {
         const data = await response.json();
         setEmployees(data.data || []);
@@ -53,7 +53,7 @@ export default function HREmployees({ onBack }) {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/employees/${selectedEmployee.id}`, {
+      const response = await fetch(`/api/employees/${selectedEmployee.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -89,7 +89,7 @@ export default function HREmployees({ onBack }) {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/employees/${employeeId}`, {
+      const response = await fetch(`/api/employees/${employeeId}`, {
         method: 'DELETE'
       });
 

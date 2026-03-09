@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { getImageUrl } from "./config";
 
 export default function StorePage({ onBack, onRequest, items, isManager = false, onEdit, onDelete, onAddItem }) {
   const [search, setSearch] = useState("");
@@ -39,7 +40,11 @@ export default function StorePage({ onBack, onRequest, items, isManager = false,
         </div>
         {filteredItems.map(item => (
           <div className="table-row" key={item.id}>
-            <img src={item.photo ? `${window.location.protocol}//${window.location.hostname}:5000${item.photo}` : "https://via.placeholder.com/60x60?text=No+Image"} alt="" style={{width: '60px', height: '60px', objectFit: 'cover'}} />
+            <img 
+              src={getImageUrl(item.photo)} 
+              alt="" 
+              style={{width: '60px', height: '60px', objectFit: 'cover'}} 
+            />
             <div>{item.model}</div>
             <div className="brand">{item.brand}</div>
             <div>{item.category}</div>

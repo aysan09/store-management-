@@ -51,26 +51,15 @@ export default function App() {
         }
 
         // Fetch requests
-        const requestsResponse = await fetch('localhost:5000/api/requests');
+        const requestsResponse = await fetch('/api/requests');
         console.log('Requests response status:', requestsResponse.status);
         if (requestsResponse.ok) {
           const requestsResult = await requestsResponse.json();
           console.log('Requests result:', requestsResult);
           if (requestsResult.success) {
-            // Transform database field names to frontend field names
-            const transformedRequests = requestsResult.data.map(req => ({
-              id: req.id,
-              employeeName: req.employee_name,
-              itemName: req.item_name,
-              quantity: req.quantity,
-              status: req.status,
-              dateAdded: req.date_added,
-              dateApproved: req.date_approved,
-              dateFinished: req.date_finished,
-              purpose: req.purpose || 'N/A'
-            }));
-            setRequests(transformedRequests);
-            console.log('Requests updated with:', transformedRequests.length, 'requests');
+            // Backend already returns camelCase field names, no transformation needed
+            setRequests(requestsResult.data);
+            console.log('Requests updated with:', requestsResult.data.length, 'requests');
           }
         } else {
           console.error('Failed to fetch requests:', requestsResponse.status);
@@ -107,13 +96,47 @@ export default function App() {
   }, []);
 
   // Function to mark a request as finished
-  const markRequestFinished = (employeeName, itemName, quantity) => {
-    const currentDate = new Date().toISOString().split('T')[0];
-    setRequests(prev => prev.map(req => 
-      req.employeeName === employeeName && req.itemName === itemName && req.quantity === quantity 
-        ? { ...req, status: 'Finished', dateFinished: currentDate }
-        : req
-    ));
+  const markRequestFinished = async (employeeName, itemName, quantity) => {
+    try {
+      // Find the request to get its ID
+      const request = requests.find(req => 
+        req.employeeName === employeeName && 
+        req.itemName === itemName && 
+        req.quantity === quantity
+      );
+
+      if (!request) {
+        alert('Request not found');
+        return;
+      }
+
+      // Update status in database - move from approved to finished
+      const response = await fetch(`/api/requests/approved/${request.id}/finish`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({})
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        // Update local state
+        const currentDate = new Date().toISOString().split('T')[0];
+        setRequests(prev => prev.map(req => 
+          req.id === request.id 
+            ? { ...req, status: 'Finished', dateFinished: currentDate }
+            : req
+        ));
+        alert('Request marked as finished successfully!');
+      } else {
+        alert('Error marking request as finished: ' + result.message);
+      }
+    } catch (error) {
+      console.error('Error marking request as finished:', error);
+      alert('Error marking request as finished. Please try again.');
+    }
   };
 
   // Function to add a new employee
@@ -276,6 +299,7 @@ export default function App() {
         onBack={() => setView('store')} 
         onViewStatus={() => setView('request-status')}
         items={inventory} 
+        user={user}
         onAddRequest={(newRequest) => setRequests([...requests, newRequest])}
       />
     );

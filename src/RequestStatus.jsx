@@ -1,7 +1,34 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import "./styles.css";
 
-export default function RequestStatus({ onBack, requests }) {
+export default function RequestStatus({ onBack }) {
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchRequests = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/requests');
+        if (!response.ok) {
+          throw new Error('Failed to fetch requests');
+        }
+        const data = await response.json();
+        setRequests(data.data || []);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRequests();
+  }, []);
+
+  if (loading) return <div className="status-page">Loading requests...</div>;
+  if (error) return <div className="status-page">Error: {error}</div>;
+
   console.log('RequestStatus received requests:', requests);
   return (
     <div className="status-page">
@@ -27,7 +54,7 @@ export default function RequestStatus({ onBack, requests }) {
             <div style={{fontSize: '12px', color: '#666'}}>{req.dateAdded || 'N/A'}</div>
             <div className="purpose-text">{req.purpose}</div>
             <div className={`approval-status ${req.status.toLowerCase()}`}>
-              {req.status === "Pending" ? "⏳ Pending" : req.status === "Approved" ? "✅ Approved" : "❌ Rejected"}
+              {req.status === "Pending" ? "⏳ Pending" : req.status === "Approved" ? "✅ Approved" : req.status === "Finished" ? "✅ Finished" : "❌ Rejected"}
             </div>
           </div>
         ))}

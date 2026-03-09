@@ -305,7 +305,7 @@ body {
 
 .about-content h2 {
   text-align: center;
-  color: #1e40af;
+  color: #0b5fad;
   font-size: 40px;
   margin-bottom: 20px;
   font-weight: 700;
@@ -366,15 +366,8 @@ body {
 .about-features {
   margin-bottom: 80px;
   font-size: medium;
-  transform: translateY(40px);
-  opacity: 0;
-  transition: transform 0.8s ease, opacity 0.8s ease;
 }
 
-.about-features.animate-in {
-  transform: translateY(0);
-  opacity: 1;
-}
 
 .about-features h3 {
   text-align: center;
@@ -396,14 +389,9 @@ body {
   border-radius: 16px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
-  transform: translateY(30px);
-  opacity: 0;
-  animation: fadeInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-}
-
-.feature-card.animate-in {
-  transform: translateY(0);
-  opacity: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
 }
 
 .feature-card:hover {
@@ -411,6 +399,25 @@ body {
   box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
 }
 
+.feature-logo {
+  align-self: center;
+  margin-bottom: -10px;
+}
+
+/* Ensure SVG logos are visible */
+.feature-logo svg {
+  display: block;
+  width: 48px;
+  height: 48px;
+}
+
+.feature-card h3 {
+  color: #1e40af;
+  font-size: 24px;
+  margin: 0 0 15px 0;
+  font-weight: 700;
+  text-align: center;
+}
 .feature-card h4 {
   color: #1e40af;
   font-size: 24px;
@@ -420,7 +427,7 @@ body {
 
 .feature-card p {
   color: #070707;
-  font-size:17px;
+  font-size: 17px;
   line-height: 1.6;
   margin: 0;
 }
@@ -430,16 +437,6 @@ body {
   padding: 40px;
   border-radius: 20px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-  transform: translateY(40px);
-  opacity: 0;
-  transition: transform 0.8s ease, opacity 0.8s ease;
-  bottom: 15px;
-  position: relative;
-}
-
-.about-team.animate-in {
-  transform: translateY(0);
-  opacity: 1;
 }
 
 .about-team h3 {

@@ -1,11 +1,12 @@
 import React from "react";
+import { getImageUrl } from "./config";
 
 export default function StoreManagerPage({ onBack, inventory, setInventory, onViewRequests, onAddItem, onViewFinished, approvedRequests, onMarkFinished }) {
   
   // Function to update item quantity in database
   const handleQuantityUpdate = async (itemId, newQuantity) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/items/${itemId}`, {
+      const response = await fetch(`/api/items/${itemId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -38,7 +39,7 @@ export default function StoreManagerPage({ onBack, inventory, setInventory, onVi
   const handleDelete = async (id) => {
     if (window.confirm("Delete this item?")) {
       try {
-        const response = await fetch(`http://localhost:5000/api/items/${id}`, {
+        const response = await fetch(`/api/items/${id}`, {
           method: 'DELETE'
         });
 
@@ -88,9 +89,40 @@ export default function StoreManagerPage({ onBack, inventory, setInventory, onVi
               <div className="actions">
                 <button 
                   className="finish-btn" 
-                  onClick={() => {
-                    if (onMarkFinished) {
-                      onMarkFinished(req.employeeName, req.itemName, req.quantity);
+                  onClick={async () => {
+                    try {
+                      // Find the request to get its ID
+                      const request = approvedRequests.find(r => 
+                        r.employeeName === req.employeeName && 
+                        r.itemName === req.itemName && 
+                        r.quantity === req.quantity
+                      );
+
+                      if (!request) {
+                        alert('Request not found');
+                        return;
+                      }
+
+                      // Finish the request
+                      const response = await fetch(`/api/requests/${request.id}/finish`, {
+                        method: 'PUT',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({})
+                      });
+
+                      const result = await response.json();
+                      
+                      if (result.success) {
+                        alert('Request finished successfully!');
+                        // Request is finished, but stay on the same page
+                      } else {
+                        alert('Error finishing request: ' + result.message);
+                      }
+                    } catch (error) {
+                      console.error('Error finishing request:', error);
+                      alert('Error finishing request. Please try again.');
                     }
                   }}
                   style={{
@@ -118,7 +150,7 @@ export default function StoreManagerPage({ onBack, inventory, setInventory, onVi
           </div>
           {inventory.map(item => (
             <div className="table-row" key={item.id}>
-              <img src={item.photo ? `${window.location.protocol}//${window.location.hostname}:5000${item.photo}` : "https://via.placeholder.com/40x40?text=No+Image"} alt="" style={{width: '40px', height: '40px', objectFit: 'cover'}} />
+              <img src={getImageUrl(item.photo)} alt="" style={{width: '40px', height: '40px', objectFit: 'cover'}} />
               <div>{item.model}</div><div>{item.brand}</div>
               <div>
                 <input 
