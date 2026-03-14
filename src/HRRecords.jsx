@@ -6,42 +6,79 @@ export default function HRRecords({ onBack, allRequests, onGoToHRReview }) {
   const records = allRequests.filter(req => req.status !== "Pending");
 
   return (
-    <div className="status-page">
-      <header className="status-header-row">
-        <button className="back-btn" onClick={onGoToHRReview || onBack}>← Back to HR Review</button>
-        <h1 className="status-main-title">Request Records</h1>
+    <div className="hr-records-page">
+      <div className="hr-records-header">
+        <button className="back-btn" onClick={onGoToHRReview || onBack}>← Back</button>
+        <h1 className="hr-records-title">HR Records</h1>
         <div style={{ width: '80px' }}></div> {/* Spacer for symmetry */}
-      </header>
+      </div>
 
-      <div className="status-container">
-        <div className="hr-table-header">
-          <div>Employee</div>
-          <div>Item</div>
-          <div>Qty</div>
-          <div>Date</div>
-          <div>Purpose</div>
-          <div>Status</div>
+      <div className="hr-records-container">
+        <div className="hr-records-search-section">
+          <div className="search-box">
+            <span className="search-icon">🔍</span>
+            <input 
+              type="text" 
+              placeholder="Search records..." 
+              className="search-input"
+            />
+          </div>
         </div>
 
-        {records.length > 0 ? (
-          records.map((req, index) => (
-            <div className="hr-table-row" key={index}>
-              <div>{req.employeeName}</div>
-              <div>{req.itemName}</div>
-              <div>{req.quantity}</div>
-              <div style={{fontSize: '12px', color: '#666'}}>{req.dateAdded || 'N/A'}</div>
-              <div className="purpose-text">{req.purpose}</div>
-              <div style={{ 
-                fontWeight: 'bold', 
-                color: req.status === 'Approved' ? '#22c55e' : '#ef4444' 
-              }}>
-                {req.status}
+        <div className="hr-records-table-container">
+          <div className="hr-records-table-header">
+            <div className="table-header-cell">Employee</div>
+            <div className="table-header-cell">Item</div>
+            <div className="table-header-cell">Quantity</div>
+            <div className="table-header-cell">Date</div>
+            <div className="table-header-cell">Purpose</div>
+            <div className="table-header-cell">Status</div>
+          </div>
+
+          {records.length > 0 ? (
+            records.map((req, index) => (
+              <div className="hr-records-table-row" key={index}>
+                <div className="table-cell employee-cell">
+                  <div className="employee-info">
+                    <div className="employee-name">{req.employeeName}</div>
+                    <div className="employee-id">ID: {req.employeeId || 'N/A'}</div>
+                  </div>
+                </div>
+                <div className="table-cell item-cell">
+                  <div className="item-info">
+                    <div className="item-name">{req.itemName}</div>
+                    <div className="item-category">Category: {req.itemCategory || 'General'}</div>
+                  </div>
+                </div>
+                <div className="table-cell quantity-cell">
+                  <span className="quantity-badge">{req.quantity}</span>
+                </div>
+                <div className="table-cell date-cell">
+                  <div className="date-info">
+                    <div className="date-added">{req.dateAdded || 'N/A'}</div>
+                    <div className="date-time">{req.timeAdded || ''}</div>
+                  </div>
+                </div>
+                <div className="table-cell purpose-cell">
+                  <div className="purpose-content">{req.purpose}</div>
+                </div>
+                <div className="table-cell status-cell">
+                  <span className={`status-badge ${req.status.toLowerCase()}`}>
+                    {req.status === "Approved" ? "✅ Approved" : 
+                     req.status === "Finished" ? "✅ Finished" : 
+                     req.status === "Rejected" ? "❌ Rejected" : req.status}
+                  </span>
+                </div>
               </div>
+            ))
+          ) : (
+            <div className="empty-state">
+              <div className="empty-icon">📋</div>
+              <h3 className="empty-title">No Records Found</h3>
+              <p className="empty-description">No processed request records are available at this time.</p>
             </div>
-          ))
-        ) : (
-          <p style={{ textAlign: 'center', padding: '20px' }}>No processed records found.</p>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

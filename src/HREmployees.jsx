@@ -11,6 +11,9 @@ export default function HREmployees({ onBack }) {
     newPassword: '',
     confirmPassword: ''
   });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('name');
+  const [sortOrder, setSortOrder] = useState('asc');
 
   useEffect(() => {
     loadEmployees();
@@ -107,58 +110,175 @@ export default function HREmployees({ onBack }) {
     }
   };
 
+  const handleSort = (field) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortOrder('asc');
+    }
+  };
+
+  const sortedEmployees = [...employees].sort((a, b) => {
+    let aValue = a[sortBy];
+    let bValue = b[sortBy];
+    
+    // Handle date sorting
+    if (sortBy === 'date_created') {
+      aValue = new Date(aValue);
+      bValue = new Date(bValue);
+    }
+    
+    if (sortOrder === 'asc') {
+      return aValue > bValue ? 1 : -1;
+    } else {
+      return aValue < bValue ? 1 : -1;
+    }
+  });
+
+  const filteredEmployees = sortedEmployees.filter(employee =>
+    employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    employee.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    employee.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    employee.employee_id.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
-    <div className="status-page">
-      <header className="status-header-row">
-        <button className="back-btn" onClick={onBack}>← Back</button>
-        <h1 className="status-main-title">Employee Management</h1>
-        <div style={{ width: '80px' }}></div> {/* Spacer for symmetry */}
+    <div className="employee-management-page">
+      <header className="employee-management-header">
+        <div className="header-content">
+          <button className="back-btn" onClick={onBack}>← Back</button>
+          <div className="header-info">
+            <h1 className="management-title">Employee Management</h1>
+            <p className="management-subtitle">Manage employee accounts and access</p>
+          </div>
+          <div className="header-stats">
+            <div className="stat-card">
+              <span className="stat-number">{employees.length}</span>
+              <span className="stat-label">Total Employees</span>
+            </div>
+          </div>
+        </div>
       </header>
 
-      <div className="status-container">
+      <div className="management-container">
+        {/* Search and Filter Section */}
+        <div className="search-section">
+          <div className="search-box">
+            <input
+              type="text"
+              placeholder="Search employees by name, department, position, or ID..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="search-input"
+            />
+            <span className="search-icon">🔍</span>
+          </div>
+          <div className="sort-controls">
+            <span className="sort-label">Sort by:</span>
+            {['name', 'department', 'position', 'date_created'].map((field) => (
+              <button
+                key={field}
+                className={`sort-btn ${sortBy === field ? 'active' : ''}`}
+                onClick={() => handleSort(field)}
+              >
+                {field === 'name' ? 'Name' : 
+                 field === 'department' ? 'Department' : 
+                 field === 'position' ? 'Position' : 'Date Created'}
+                {sortBy === field && (
+                  <span>{sortOrder === 'asc' ? ' ↑' : ' ↓'}</span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Employee Table */}
         {loading ? (
-          <p style={{ textAlign: 'center', padding: '20px' }}>Loading employees...</p>
-        ) : employees.length === 0 ? (
-          <p style={{ textAlign: 'center', padding: '20px' }}>No employees found.</p>
+          <div className="loading-state">
+            <div className="loading-spinner"></div>
+            <p>Loading employees...</p>
+          </div>
+        ) : filteredEmployees.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-icon">👥</div>
+            <h3 className="empty-title">No Employees Found</h3>
+            <p className="empty-description">
+              {searchTerm ? 'No employees match your search criteria.' : 'No employees have been registered yet.'}
+            </p>
+          </div>
         ) : (
-          <div>
-            <div className="hr-table-header">
-              <div>Employee Name</div>
-              <div>Department</div>
-              <div>Position</div>
-              <div>Employee ID</div>
-              <div>Date Created</div>
-              <div>Actions</div>
+          <div className="employee-table-container">
+            <div className="employee-table-header">
+              <div className="table-header-cell" onClick={() => handleSort('name')}>
+                Employee Name
+                {sortBy === 'name' && <span>{sortOrder === 'asc' ? ' ↑' : ' ↓'}</span>}
+              </div>
+              <div className="table-header-cell" onClick={() => handleSort('department')}>
+                Department
+                {sortBy === 'department' && <span>{sortOrder === 'asc' ? ' ↑' : ' ↓'}</span>}
+              </div>
+              <div className="table-header-cell" onClick={() => handleSort('position')}>
+                Position
+                {sortBy === 'position' && <span>{sortOrder === 'asc' ? ' ↑' : ' ↓'}</span>}
+              </div>
+              <div className="table-header-cell" onClick={() => handleSort('employee_id')}>
+                Employee ID
+                {sortBy === 'employee_id' && <span>{sortOrder === 'asc' ? ' ↑' : ' ↓'}</span>}
+              </div>
+              <div className="table-header-cell" onClick={() => handleSort('date_created')}>
+                Date Created
+                {sortBy === 'date_created' && <span>{sortOrder === 'asc' ? ' ↑' : ' ↓'}</span>}
+              </div>
+              <div className="table-header-cell">Actions</div>
             </div>
 
-            {employees.map((employee) => (
-              <div className="hr-table-row" key={employee.id}>
-                <div>{employee.name}</div>
-                <div>{employee.department}</div>
-                <div>{employee.position}</div>
-                <div style={{ fontFamily: 'monospace', background: '#f3f4f6', padding: '2px 6px', borderRadius: '4px' }}>
-                  {employee.employee_id}
+            {filteredEmployees.map((employee) => (
+              <div className="employee-table-row" key={employee.id}>
+                <div className="employee-cell">
+                  <div className="employee-avatar">
+                    {employee.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="employee-info">
+                    <span className="employee-name">{employee.name}</span>
+                    <span className="employee-id">ID: {employee.employee_id}</span>
+                  </div>
                 </div>
-                <div style={{ fontSize: '12px', color: '#666' }}>
-                  {employee.date_created ? new Date(employee.date_created).toLocaleDateString() : 'N/A'}
+                <div className="department-cell">
+                  <span className="employee-department">{employee.department}</span>
                 </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button 
-                    className="action-btn"
-                    onClick={() => {
-                      setSelectedEmployee(employee);
-                      setShowPassword(!showPassword && selectedEmployee?.id === employee.id);
-                    }}
-                    style={{ background: showPassword && selectedEmployee?.id === employee.id ? '#3b82f6' : '#64748b' }}
-                  >
-                    {showPassword && selectedEmployee?.id === employee.id ? 'Hide' : 'View/Reset Password'}
-                  </button>
-                  <button 
-                    className="action-btn delete-btn"
-                    onClick={() => handleDeleteEmployee(employee.id)}
-                  >
-                    Delete
-                  </button>
+                <div className="position-cell">
+                  <span className="employee-position">{employee.position}</span>
+                </div>
+                <div className="id-cell">
+                  <span className="employee-id-badge">{employee.employee_id}</span>
+                </div>
+                <div className="date-cell">
+                  <span className="date-added">
+                    {employee.date_created ? new Date(employee.date_created).toLocaleDateString() : 'N/A'}
+                  </span>
+                  <span className="date-time">
+                    {employee.date_created ? new Date(employee.date_created).toLocaleTimeString() : ''}
+                  </span>
+                </div>
+                <div className="action-cell">
+                  <div className="employee-actions">
+                    <button 
+                      className={`action-btn password-btn ${showPassword && selectedEmployee?.id === employee.id ? 'active' : ''}`}
+                      onClick={() => {
+                        setSelectedEmployee(employee);
+                        setShowPassword(!showPassword && selectedEmployee?.id === employee.id);
+                      }}
+                    >
+                      {showPassword && selectedEmployee?.id === employee.id ? 'Hide Password' : 'Reset Password'}
+                    </button>
+                    <button 
+                      className="action-btn delete-btn"
+                      onClick={() => handleDeleteEmployee(employee.id)}
+                    >
+                      Delete Employee
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -167,108 +287,76 @@ export default function HREmployees({ onBack }) {
 
         {/* Password Management Modal */}
         {selectedEmployee && showPassword && (
-          <div className="password-modal">
+          <div className="password-modal-overlay">
             <div className="password-modal-content">
-              <h3>Manage Password for {selectedEmployee.name}</h3>
-              <p style={{ fontSize: '12px', color: '#666', marginBottom: '15px' }}>
-                Note: For security reasons, passwords are stored as hashed values and cannot be viewed in plain text.
-              </p>
+              <div className="modal-header">
+                <h3>Manage Password for {selectedEmployee.name}</h3>
+                <button 
+                  className="modal-close"
+                  onClick={() => setShowPassword(false)}
+                >
+                  ×
+                </button>
+              </div>
               
-              <form onSubmit={handleResetPassword}>
-                <div style={{ marginBottom: '15px' }}>
-                  <label className="field-label">New Password</label>
-                  <input 
-                    type="password"
-                    className="field-input"
-                    value={resetPasswordForm.newPassword}
-                    onChange={(e) => setResetPasswordForm({...resetPasswordForm, newPassword: e.target.value})}
-                    placeholder="Enter new password (min 6 characters)"
-                    minLength="6"
-                    required
-                  />
-                </div>
+              <div className="modal-body">
+                <p className="security-note">
+                  Note: For security reasons, passwords are stored as hashed values and cannot be viewed in plain text.
+                </p>
                 
-                <div style={{ marginBottom: '15px' }}>
-                  <label className="field-label">Confirm New Password</label>
-                  <input 
-                    type="password"
-                    className="field-input"
-                    value={resetPasswordForm.confirmPassword}
-                    onChange={(e) => setResetPasswordForm({...resetPasswordForm, confirmPassword: e.target.value})}
-                    placeholder="Confirm new password"
-                    minLength="6"
-                    required
-                  />
-                </div>
-                
-                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                  <button 
-                    type="button"
-                    className="action-btn"
-                    onClick={() => setShowPassword(false)}
-                    style={{ background: '#64748b' }}
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    type="submit"
-                    className="action-btn"
-                    style={{ background: '#10b981' }}
-                  >
-                    Reset Password
-                  </button>
-                </div>
-              </form>
+                <form onSubmit={handleResetPassword}>
+                  <div className="form-group">
+                    <label className="form-label">New Password</label>
+                    <div className="input-wrapper">
+                      <input 
+                        type="password"
+                        className="form-input"
+                        value={resetPasswordForm.newPassword}
+                        onChange={(e) => setResetPasswordForm({...resetPasswordForm, newPassword: e.target.value})}
+                        placeholder="Enter new password (min 6 characters)"
+                        minLength="6"
+                        required
+                      />
+                    </div>
+                    <span className="password-hint">Password must be at least 6 characters long</span>
+                  </div>
+                  
+                  <div className="form-group">
+                    <label className="form-label">Confirm New Password</label>
+                    <div className="input-wrapper">
+                      <input 
+                        type="password"
+                        className="form-input"
+                        value={resetPasswordForm.confirmPassword}
+                        onChange={(e) => setResetPasswordForm({...resetPasswordForm, confirmPassword: e.target.value})}
+                        placeholder="Confirm new password"
+                        minLength="6"
+                        required
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="modal-actions">
+                    <button 
+                      type="button"
+                      className="action-btn cancel-btn"
+                      onClick={() => setShowPassword(false)}
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      type="submit"
+                      className="action-btn reset-btn"
+                    >
+                      Reset Password
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
           </div>
         )}
       </div>
-
-      <style jsx>{`
-        .action-btn {
-          padding: 6px 12px;
-          border: none;
-          border-radius: 4px;
-          color: white;
-          cursor: pointer;
-          font-size: 12px;
-          transition: background-color 0.2s;
-        }
-        
-        .action-btn:hover {
-          opacity: 0.8;
-        }
-        
-        .delete-btn {
-          background-color: #ef4444 !important;
-        }
-        
-        .password-modal {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: rgba(0, 0, 0, 0.5);
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          z-index: 1000;
-        }
-        
-        .password-modal-content {
-          background: white;
-          padding: 20px;
-          border-radius: 8px;
-          width: 400px;
-          max-width: 90%;
-        }
-        
-        .password-modal-content h3 {
-          margin: 0 0 10px 0;
-          color: #374151;
-        }
-      `}</style>
     </div>
   );
 }

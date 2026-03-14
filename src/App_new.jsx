@@ -12,6 +12,7 @@ import FinishedRequests from './FinishedRequests';
 import HeroPage from './HeroPage';
 import EmployeeRegistration from './EmployeeRegistration';
 import SQLWorkbench from './SQLWorkbench';
+import HREmployees from './HREmployees';
 
 export default function App() {
   const [view, setView] = useState('hero');

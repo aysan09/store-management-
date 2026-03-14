@@ -38,7 +38,7 @@ export default function FinishedRequests({ onBack, finishedRequests }) {
                 fontWeight: 'bold', 
                 color: '#6b7280' 
               }}>
-                ✅ Finished
+                ✅ Approved & Finished
               </div>
             </div>
           ))

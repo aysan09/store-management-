@@ -11,6 +11,8 @@ export default function EmployeeRegistration({ onBack, onAddEmployee }) {
   });
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Load existing employees from database on component mount
   useEffect(() => {
@@ -104,130 +106,217 @@ export default function EmployeeRegistration({ onBack, onAddEmployee }) {
 
 
   return (
-    <div className="store-page">
-      <div className="store-container">
-        <div className="store-header">
+    <div className="employee-registration-page">
+      <div className="employee-registration-container">
+        {/* Header Section */}
+        <div className="registration-header">
           <button className="back-btn" onClick={onBack}>← Back</button>
-          <h1 className="store-title" style={{color: '#059669'}}>Employee Registration</h1>
+          <div className="header-content">
+            <h1 className="registration-title">Employee Registration</h1>
+            <p className="registration-subtitle">Add new employees to the system</p>
+          </div>
         </div>
         
-        <div style={{display: 'flex', gap: '40px'}}>
+        {/* Main Content */}
+        <div className="registration-layout">
           {/* Registration Form */}
-          <div style={{flex: 1, maxWidth: '500px'}}>
-            <form onSubmit={handleSubmit} style={{display: 'flex', flexDirection: 'column', gap: '20px'}}>
-              <div className="field">
-                <label className="field-label">Employee Name *</label>
-                <input 
-                  className="field-input" 
-                  placeholder="Enter employee full name" 
-                  value={form.name}
-                  onChange={e => setForm({...form, name: e.target.value})} 
-                  required 
-                />
+          <div className="registration-form-card">
+            <div className="form-header">
+              <h2 className="form-title">New Employee Details</h2>
+              <p className="form-description">Fill in all required fields to register a new employee</p>
+            </div>
+            
+            <form onSubmit={handleSubmit} className="registration-form">
+              <div className="form-group">
+                <label className="form-label">
+                  Employee Name <span className="required">*</span>
+                </label>
+                <div className="input-wrapper">
+                  <input 
+                    type="text"
+                    className="form-input"
+                    placeholder="Enter employee full name" 
+                    value={form.name}
+                    onChange={e => setForm({...form, name: e.target.value})} 
+                    required 
+                  />
+                  <div className="input-icon">👤</div>
+                </div>
               </div>
               
-              <div className="field">
-                <label className="field-label">Department *</label>
-                <input 
-                  className="field-input" 
-                  placeholder="Enter department" 
-                  value={form.department}
-                  onChange={e => setForm({...form, department: e.target.value})} 
-                  required 
-                />
-              </div>
-              
-              <div className="field">
-                <label className="field-label">Position *</label>
-                <input 
-                  className="field-input" 
-                  placeholder="Enter job position" 
-                  value={form.position}
-                  onChange={e => setForm({...form, position: e.target.value})} 
-                  required 
-                />
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">
+                    Department <span className="required">*</span>
+                  </label>
+                  <div className="input-wrapper">
+                    <input 
+                      type="text"
+                      className="form-input" 
+                      placeholder="Enter department" 
+                      value={form.department}
+                      onChange={e => setForm({...form, department: e.target.value})} 
+                      required 
+                    />
+                    <div className="input-icon">🏢</div>
+                  </div>
+                </div>
+                
+                <div className="form-group">
+                  <label className="form-label">
+                    Position <span className="required">*</span>
+                  </label>
+                  <div className="input-wrapper">
+                    <input 
+                      type="text"
+                      className="form-input" 
+                      placeholder="Enter job position" 
+                      value={form.position}
+                      onChange={e => setForm({...form, position: e.target.value})} 
+                      required 
+                    />
+                    <div className="input-icon">💼</div>
+                  </div>
+                </div>
               </div>
 
-              <div className="field">
-                <label className="field-label">Employee ID *</label>
-                <input 
-                  className="field-input" 
-                  placeholder="Enter employee ID" 
-                  value={form.employee_Id}
-                  onChange={e => setForm({...form, employee_Id: e.target.value})} 
-                  required 
-                />
+              <div className="form-group">
+                <label className="form-label">
+                  Employee ID <span className="required">*</span>
+                </label>
+                <div className="input-wrapper">
+                  <input 
+                    type="text"
+                    className="form-input" 
+                    placeholder="Enter employee ID" 
+                    value={form.employee_Id}
+                    onChange={e => setForm({...form, employee_Id: e.target.value})} 
+                    required 
+                  />
+                  <div className="input-icon">🆔</div>
+                </div>
               </div>
               
-              <div className="field">
-                <label className="field-label">Password *</label>
-                <input 
-                  type="password"
-                  className="field-input" 
-                  placeholder="Enter password" 
-                  value={form.password}
-                  onChange={e => setForm({...form, password: e.target.value})} 
-                  required 
-                  minLength="6"
-                />
+              <div className="form-group">
+                <label className="form-label">
+                  Password <span className="required">*</span>
+                </label>
+                <div className="input-wrapper password-wrapper">
+                  <input 
+                    type={showPassword ? "text" : "password"}
+                    className="form-input password-input" 
+                    placeholder="Enter password" 
+                    value={form.password}
+                    onChange={e => setForm({...form, password: e.target.value})} 
+                    required 
+                    minLength="6"
+                  />
+                  <button 
+                    type="button"
+                    className="password-toggle"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? "🙈" : "👁️"}
+                  </button>
+                </div>
+                <div className="password-hint">Minimum 6 characters</div>
               </div>
               
-              <div className="field">
-                <label className="field-label">Confirm Password *</label>
-                <input 
-                  type="password"
-                  className="field-input" 
-                  placeholder="Confirm password" 
-                  value={form.confirmPassword}
-                  onChange={e => setForm({...form, confirmPassword: e.target.value})} 
-                  required 
-                  minLength="6"
-                />
+              <div className="form-group">
+                <label className="form-label">
+                  Confirm Password <span className="required">*</span>
+                </label>
+                <div className="input-wrapper password-wrapper">
+                  <input 
+                    type={showConfirmPassword ? "text" : "password"}
+                    className="form-input password-input" 
+                    placeholder="Confirm password" 
+                    value={form.confirmPassword}
+                    onChange={e => setForm({...form, confirmPassword: e.target.value})} 
+                    required 
+                    minLength="6"
+                  />
+                  <button 
+                    type="button"
+                    className="password-toggle"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    {showConfirmPassword ? "🙈" : "👁️"}
+                  </button>
+                </div>
+                {form.password && form.confirmPassword && form.password !== form.confirmPassword && (
+                  <div className="password-error">Passwords do not match</div>
+                )}
               </div>
               
-              <button type="submit" className="add-request-btn" style={{background: '#059669', marginTop: '10px'}}>
-                Register Employee
+              <button 
+                type="submit" 
+                className="submit-btn"
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <span className="loading-spinner"></span>
+                    Registering...
+                  </>
+                ) : (
+                  <>
+                    🎯 Register Employee
+                  </>
+                )}
               </button>
             </form>
           </div>
 
           {/* Employee List */}
-              <div style={{flex: 1, borderLeft: '1px solid #e5e7eb', paddingLeft: '30px'}}>
-            <h3 style={{marginBottom: '20px', color: '#374151'}}>Registered Employees</h3>
-            {employees.length === 0 ? (
-              <p style={{color: '#9ca3af', fontStyle: 'italic'}}>No employees registered yet.</p>
-            ) : (
-              <div style={{display: 'flex', flexDirection: 'column', gap: '15px'}}>
-                {employees.map(employee => (
-                  <div key={employee.id} style={{
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                    padding: '15px',
-                    backgroundColor: '#f9fafb'
-                  }}>
-                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                      <div>
-                        <h4 style={{margin: '0 0 5px 0', color: '#111827'}}>{employee.name}</h4>
-                        <p style={{margin: '0 0 5px 0', color: '#6b7280'}}>{employee.position} - {employee.department}</p>
-                        <p style={{margin: '0', color: '#374151', fontWeight: 'bold'}}>ID: {employee.employeeId}</p>
-                      </div>
-                      <div style={{textAlign: 'right'}}>
-                        <p style={{margin: '0 0 5px 0', color: '#6b7280', fontSize: '12px'}}>Created: {employee.dateCreated}</p>
-                        <span style={{
-                          padding: '5px 10px',
-                          backgroundColor: '#9ca3af',
-                          color: 'white',
-                          borderRadius: '4px',
-                          fontSize: '12px'
-                        }}>
-                          Password not available
-                        </span>
+          <div className="employee-list-card">
+            <div className="list-header">
+              <h2 className="list-title">Registered Employees</h2>
+              <p className="list-subtitle">Current employees in the system</p>
+            </div>
+            
+            <div className="employee-stats">
+              <div className="stat-item">
+                <span className="stat-number">{employees.length}</span>
+                <span className="stat-label">Total Employees</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-number">{employees.filter(e => e.department).length}</span>
+                <span className="stat-label">Departments</span>
+              </div>
+            </div>
+
+            <div className="employee-list">
+              {employees.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-icon">👥</div>
+                  <h3 className="empty-title">No Employees Yet</h3>
+                  <p className="empty-description">Be the first to register an employee!</p>
+                </div>
+              ) : (
+                employees.map(employee => (
+                  <div key={employee.id} className="employee-card">
+                    <div className="employee-avatar">
+                      {employee.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="employee-info">
+                      <h4 className="employee-name">{employee.name}</h4>
+                      <p className="employee-position">{employee.position}</p>
+                      <div className="employee-meta">
+                        <span className="employee-id">ID: {employee.employeeId}</span>
+                        <span className="employee-department">{employee.department}</span>
                       </div>
                     </div>
+                    <div className="employee-actions">
+                      <span className="employee-date">
+                        {new Date(employee.dateCreated).toLocaleDateString()}
+                      </span>
+                      <span className="employee-status">Active</span>
+                    </div>
                   </div>
-                ))}
-              </div>
-            )}
+                ))
+              )}
+            </div>
           </div>
         </div>
       </div>

@@ -54,7 +54,7 @@ export default function RequestStatus({ onBack }) {
             <div style={{fontSize: '12px', color: '#666'}}>{req.dateAdded || 'N/A'}</div>
             <div className="purpose-text">{req.purpose}</div>
             <div className={`approval-status ${req.status.toLowerCase()}`}>
-              {req.status === "Pending" ? "⏳ Pending" : req.status === "Approved" ? "✅ Approved" : req.status === "Finished" ? "✅ Finished" : "❌ Rejected"}
+              {req.status === "Pending" ? "⏳ Pending" : req.status === "Approved" ? "✅ Approved" : req.status === "Finished" ? "✅ Approved & Finished" : "❌ Rejected"}
             </div>
           </div>
         ))}
