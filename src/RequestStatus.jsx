@@ -5,6 +5,9 @@ export default function RequestStatus({ onBack }) {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('dateAdded');
+  const [sortOrder, setSortOrder] = useState('desc');
 
   useEffect(() => {
     const fetchRequests = async () => {
@@ -12,10 +15,7 @@ export default function RequestStatus({ onBack }) {
         setLoading(true);
         const response = await fetch('/api/requests');
         if (!response.ok) {
-          throw new Error('Failed to fetch requests');
-        }
-        const data = await response.json();
-        setRequests(data.data || []);
+          throw new
       } catch (err) {
         setError(err.message);
       } finally {

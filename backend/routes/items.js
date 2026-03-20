@@ -40,7 +40,7 @@ const upload = multer({
 router.get('/', async (req, res) => {
   try {
     const [rows] = await pool.execute(
-      'SELECT * FROM items ORDER BY date_added DESC'
+      'SELECT *, DATE_FORMAT(date_added, "%Y-%m-%d %H:%i:%s") as date_added_formatted FROM items ORDER BY date_added DESC'
     );
 
     res.json({

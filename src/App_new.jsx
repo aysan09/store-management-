@@ -13,6 +13,11 @@ import HeroPage from './HeroPage';
 import EmployeeRegistration from './EmployeeRegistration';
 import SQLWorkbench from './SQLWorkbench';
 import HREmployees from './HREmployees';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { notifySuccess, notifyError, notifyWarning } from './utils/toastUtils';
+import './styles.css';
+import './styles/toast-styles.css';
 
 export default function App() {
   const [view, setView] = useState('hero');
@@ -30,6 +35,26 @@ export default function App() {
     { id: 1, name: "HR Manager", department: "HR", position: "Manager", employeeId: "HR100", password: "hr123", dateCreated: "2024-02-26" },
     { id: 2, name: "Store Manager", department: "Store", position: "Manager", employeeId: "STORE100", password: "store123", dateCreated: "2024-02-26" }
   ]);
+
+  // Function to show toast notifications
+  const showToast = {
+    success: (message, duration) => {
+      // This will be implemented when we wrap the app with ToastProvider
+      console.log('Success:', message);
+    },
+    error: (message, duration) => {
+      // This will be implemented when we wrap the app with ToastProvider
+      console.log('Error:', message);
+    },
+    warning: (message, duration) => {
+      // This will be implemented when we wrap the app with ToastProvider
+      console.log('Warning:', message);
+    },
+    info: (message, duration) => {
+      // This will be implemented when we wrap the app with ToastProvider
+      console.log('Info:', message);
+    }
+  };
 
   // Fetch items, requests, and employees from database on app initialization
   useEffect(() => {
@@ -99,6 +124,9 @@ export default function App() {
   // Function to mark a request as finished
   const markRequestFinished = async (employeeName, itemName, quantity) => {
     try {
+      console.log('markRequestFinished called with:', { employeeName, itemName, quantity });
+      console.log('Current requests:', requests);
+      
       // Find the request to get its ID
       const request = requests.find(req => 
         req.employeeName === employeeName && 
@@ -106,21 +134,34 @@ export default function App() {
         req.quantity === quantity
       );
 
+      console.log('Found request:', request);
+
       if (!request) {
-        alert('Request not found');
+        notifyWarning('Request not found. Please try again.');
         return;
       }
 
       // Update status in database - move from approved to finished
-      const response = await fetch(`/api/requests/approved/${request.id}/finish`, {
+      const response = await fetch(`/api/requests/${request.id}/finish`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({})
+        }
       });
 
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+      
+      // Check if response is HTML (indicates 404 or server error)
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        console.error('Response is not JSON:', contentType);
+        notifyError('Server error. Please check if the backend server is running and try again.');
+        return;
+      }
+      
       const result = await response.json();
+      console.log('Response result:', result);
       
       if (result.success) {
         // Update local state
@@ -130,13 +171,13 @@ export default function App() {
             ? { ...req, status: 'Finished', dateFinished: currentDate }
             : req
         ));
-        alert('Request marked as finished successfully!');
+        notifySuccess('Request marked as finished successfully!');
       } else {
-        alert('Error marking request as finished: ' + result.message);
+        notifyError('Error marking request as finished: ' + (result.message || 'Unknown error'));
       }
     } catch (error) {
       console.error('Error marking request as finished:', error);
-      alert('Error marking request as finished. Please try again.');
+      notifyError('Error marking request as finished. Please check your connection and try again.');
     }
   };
 
@@ -149,7 +190,7 @@ export default function App() {
   const handleLoginSuccess = async (userData) => {
     // Validate input data
     if (!userData || !userData.id || !userData.password) {
-      alert('Please enter both employee ID and password.');
+      notifyWarning('Please enter both employee ID and password.');
       return;
     }
     
@@ -187,7 +228,7 @@ export default function App() {
           
           setView(targetView);
         } else {
-          alert(result.message || 'Invalid employee ID or password. Please try again.');
+          notifyError(result.message || 'Invalid employee ID or password. Please try again.');
         }
       } else {
         // Fallback to local authentication if API is not available
@@ -212,12 +253,12 @@ export default function App() {
           
           setView(targetView);
         } else {
-          alert('Invalid employee ID or password. Please try again.');
+          notifyError('Invalid employee ID or password. Please try again.');
         }
       }
     } catch (error) {
       console.error('Login error:', error);
-      alert('Login failed. Please check your connection and try again.');
+      notifyError('Login failed. Please check your connection and try again.');
     }
   };
 
@@ -231,87 +272,113 @@ export default function App() {
 
   if (view === 'login') {
     console.log('Rendering login page');
-    return <Login onBack={() => setView('hero')} onLoginSuccess={handleLoginSuccess} />;
+    return (
+      <>
+        <Login onBack={() => setView('hero')} onLoginSuccess={handleLoginSuccess} />
+        <ToastContainer />
+      </>
+    );
   }
 
   // Employee Views
   if (view === 'store') {
     return (
-      <StorePage 
-        onBack={handleLogout} 
-        onRequest={() => setView('request-form')} 
-        items={inventory} 
-        isManager={false}
-      />
+      <>
+        <StorePage 
+          onBack={handleLogout} 
+          onRequest={() => setView('request-form')} 
+          items={inventory} 
+          isManager={false}
+        />
+        <ToastContainer />
+      </>
     );
   }
 
   // Store Manager View
   if (view === 'store-manager') {
     return (
-      <StoreManagerPage 
-        onBack={handleLogout} 
-        inventory={inventory} 
-        setInventory={setInventory}
-        onViewRequests={() => setView('hr-reviews')}
-        onAddItem={() => setView('add-item')}
-        onViewFinished={() => setView('finished-requests')}
-        approvedRequests={requests.filter(req => req.status === 'Approved')}
-        onMarkFinished={markRequestFinished}
-      />
+      <>
+        <StoreManagerPage 
+          onBack={handleLogout} 
+          inventory={inventory} 
+          setInventory={setInventory}
+          onViewRequests={() => setView('hr-reviews')}
+          onAddItem={() => setView('add-item')}
+          onViewFinished={() => setView('finished-requests')}
+          approvedRequests={requests.filter(req => req.status === 'Approved')}
+          onMarkFinished={markRequestFinished}
+        />
+        <ToastContainer />
+      </>
     );
   }
 
   if (view === 'add-item') {
     return (
-      <AddItemPage 
-        onBack={() => setView('store-manager')} 
-        onSave={(newItem) => {
-          setInventory([...inventory, newItem]);
-          setView('store-manager');
-        }}
-        onViewRequests={() => setView('approved-requests')}
-      />
+      <>
+        <AddItemPage 
+          onBack={() => setView('store-manager')} 
+          onSave={(newItem) => {
+            setInventory([...inventory, newItem]);
+            setView('store-manager');
+          }}
+          onViewRequests={() => setView('approved-requests')}
+        />
+        <ToastContainer />
+      </>
     );
   }
 
   if (view === 'approved-requests') {
     return (
-      <ApprovedRequests 
-        onBack={() => setView('add-item')}
-        approvedRequests={requests.filter(req => req.status === 'Approved')}
-        onMarkFinished={markRequestFinished}
-      />
+      <>
+        <ApprovedRequests 
+          onBack={() => setView('add-item')}
+          approvedRequests={requests.filter(req => req.status === 'Approved')}
+          onMarkFinished={markRequestFinished}
+        />
+        <ToastContainer />
+      </>
     );
   }
 
   if (view === 'finished-requests') {
     return (
-      <FinishedRequests 
-        onBack={() => setView('store-manager')}
-        finishedRequests={requests.filter(req => req.status === 'Finished')}
-      />
+      <>
+        <FinishedRequests 
+          onBack={() => setView('store-manager')}
+          finishedRequests={requests.filter(req => req.status === 'Finished')}
+        />
+        <ToastContainer />
+      </>
     );
   }
 
   if (view === 'request-form') {
     return (
-      <RequestForm 
-        onBack={() => setView('store')} 
-        onViewStatus={() => setView('request-status')}
-        items={inventory} 
-        user={user}
-        onAddRequest={(newRequest) => setRequests([...requests, newRequest])}
-      />
+      <>
+        <RequestForm 
+          onBack={() => setView('store')} 
+          onViewStatus={() => setView('request-status')}
+          items={inventory} 
+          user={user}
+          onAddRequest={(newRequest) => setRequests([...requests, newRequest])}
+        />
+        <ToastContainer />
+      </>
     );
   }
 
   if (view === 'request-status') {
     return (
-      <RequestStatus 
-        onBack={() => setView('request-form')} 
-        requests={requests} 
-      />
+      <>
+        <RequestStatus 
+          onBack={() => setView('request-form')} 
+          requests={requests} 
+        />
+        <ToastContainer />
+      </>
     );
   }
 
@@ -332,36 +399,48 @@ export default function App() {
 
   if (view === 'hr-records') {
     return (
-      <HRRecords 
-        onBack={handleLogout} 
-        allRequests={requests}
-      />
+      <>
+        <HRRecords 
+          onBack={handleLogout} 
+          allRequests={requests}
+        />
+        <ToastContainer />
+      </>
     );
   }
 
   if (view === 'employee-registration') {
     return (
-      <EmployeeRegistration 
-        onBack={() => setView('hr-reviews')}
-        onAddEmployee={handleAddEmployee}
-      />
+      <>
+        <EmployeeRegistration 
+          onBack={() => setView('hr-reviews')}
+          onAddEmployee={handleAddEmployee}
+        />
+        <ToastContainer />
+      </>
     );
   }
 
   if (view === 'employee-management') {
     return (
-      <HREmployees 
-        onBack={() => setView('hr-reviews')}
-      />
+      <>
+        <HREmployees 
+          onBack={() => setView('hr-reviews')}
+        />
+        <ToastContainer />
+      </>
     );
   }
 
   // SQL Workbench View
   if (view === 'sql-workbench') {
     return (
-      <SQLWorkbench 
-        onBack={handleLogout}
-      />
+      <>
+        <SQLWorkbench 
+          onBack={handleLogout}
+        />
+        <ToastContainer />
+      </>
     );
   }
 

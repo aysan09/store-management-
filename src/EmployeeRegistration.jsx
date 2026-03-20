@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import './styles/employee-styles.css';
 
 export default function EmployeeRegistration({ onBack, onAddEmployee }) {
   const [form, setForm] = useState({
@@ -294,27 +295,49 @@ export default function EmployeeRegistration({ onBack, onAddEmployee }) {
                   <p className="empty-description">Be the first to register an employee!</p>
                 </div>
               ) : (
-                employees.map(employee => (
-                  <div key={employee.id} className="employee-card">
-                    <div className="employee-avatar">
-                      {employee.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="employee-info">
-                      <h4 className="employee-name">{employee.name}</h4>
-                      <p className="employee-position">{employee.position}</p>
-                      <div className="employee-meta">
-                        <span className="employee-id">ID: {employee.employeeId}</span>
-                        <span className="employee-department">{employee.department}</span>
+                <div className="employee-table-container">
+                  <div className="employee-table-header">
+                    <div className="table-header-cell">Name</div>
+                    <div className="table-header-cell">Position</div>
+                    <div className="table-header-cell">Department</div>
+                    <div className="table-header-cell">Employee ID</div>
+                    <div className="table-header-cell">Date Created</div>
+                    <div className="table-header-cell">Status</div>
+                  </div>
+                  
+                  {employees.map(employee => (
+                    <div key={employee.id} className="employee-table-row">
+                      <div className="table-cell">
+                        <div className="employee-avatar">
+                          {employee.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="employee-name">{employee.name}</div>
+                      </div>
+                      
+                      <div className="table-cell position-cell">
+                        {employee.position}
+                      </div>
+                      
+                      <div className="table-cell department-cell">
+                        {employee.department}
+                      </div>
+                      
+                      <div className="table-cell id-cell">
+                        <span className="employee-id">{employee.employeeId}</span>
+                      </div>
+                      
+                      <div className="table-cell date-cell">
+                        <span className="employee-date">
+                          {new Date(employee.dateCreated).toLocaleDateString()}
+                        </span>
+                      </div>
+                      
+                      <div className="table-cell status-cell">
+                        <span className="employee-status">Active</span>
                       </div>
                     </div>
-                    <div className="employee-actions">
-                      <span className="employee-date">
-                        {new Date(employee.dateCreated).toLocaleDateString()}
-                      </span>
-                      <span className="employee-status">Active</span>
-                    </div>
-                  </div>
-                ))
+                  ))}
+                </div>
               )}
             </div>
           </div>

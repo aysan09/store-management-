@@ -1,6 +1,7 @@
 import React from 'react';
 import logo from './vascom-logo.png';
 import laptopImg from './fi-removebg-preview.png';
+import './styles.css';
 
 export default function HeroPage({ onLoginClick, onAboutClick }) {
   const scrollToAbout = () => {

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import logo from './vascom-logo.png';
+import './styles.css';
 
 export default function Login({ onBack, onLoginSuccess }) {
   console.log('Login component rendered');

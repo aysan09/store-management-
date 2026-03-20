@@ -1,4 +1,5 @@
 import React from 'react';
+import './styles.css';
 
 export default function FinishedRequests({ onBack, finishedRequests }) {
   // Use the finishedRequests passed as props instead of fetching separately

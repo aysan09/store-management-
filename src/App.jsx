@@ -13,6 +13,7 @@ import HeroPage from './HeroPage';
 import EmployeeRegistration from './EmployeeRegistration';
 import HREmployees from './HREmployees';
 import AboutPage from './AboutPage';
+import './styles.css';
 
 export default function App() {
   const [view, setView] = useState('hero');
@@ -56,14 +57,130 @@ export default function App() {
     { id: 2, name: "Store Manager", department: "Store", position: "Manager", employeeId: "STORE100", password: "store123", dateCreated: "2024-02-26" }
   ]);
 
+  // Fetch items, requests, and employees from database on app initialization
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        console.log('Fetching data from database...');
+
+        // Fetch items
+        const itemsResponse = await fetch('/api/items');
+        console.log('Items response status:', itemsResponse.status);
+        if (itemsResponse.ok) {
+          const itemsResult = await itemsResponse.json();
+          console.log('Items result:', itemsResult);
+          if (itemsResult.success) {
+            setInventory(itemsResult.data);
+            console.log('Inventory updated with:', itemsResult.data.length, 'items');
+          }
+        } else {
+          console.error('Failed to fetch items:', itemsResponse.status);
+        }
+
+        // Fetch requests
+        const requestsResponse = await fetch('/api/requests');
+        console.log('Requests response status:', requestsResponse.status);
+        if (requestsResponse.ok) {
+          const requestsResult = await requestsResponse.json();
+          console.log('Requests result:', requestsResult);
+          if (requestsResult.success) {
+            // Backend already returns camelCase field names, no transformation needed
+            setRequests(requestsResult.data);
+            console.log('Requests updated with:', requestsResult.data.length, 'requests');
+          }
+        } else {
+          console.error('Failed to fetch requests:', requestsResponse.status);
+        }
+
+        // Fetch employees
+        const employeesResponse = await fetch('/api/employees');
+        console.log('Employees response status:', employeesResponse.status);
+        if (employeesResponse.ok) {
+          const employeesResult = await employeesResponse.json();
+          console.log('Employees result:', employeesResult);
+          if (employeesResult.success) {
+            // Transform database field names to frontend field names
+            const transformedEmployees = employeesResult.data.map(emp => ({
+              id: emp.id,
+              name: emp.name,
+              department: emp.department,
+              position: emp.position,
+              employeeId: emp.employee_id,
+              dateCreated: emp.date_created
+            }));
+            setEmployees(transformedEmployees);
+            console.log('Employees updated with:', transformedEmployees.length, 'employees');
+          }
+        } else {
+          console.error('Failed to fetch employees:', employeesResponse.status);
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
   // Function to mark a request as finished
-  const markRequestFinished = (employeeName, itemName, quantity) => {
-    const currentDate = new Date().toISOString().split('T')[0];
-    setRequests(prev => prev.map(req => 
-      req.employeeName === employeeName && req.itemName === itemName && req.quantity === quantity 
-        ? { ...req, status: 'Finished', dateFinished: currentDate }
-        : req
-    ));
+  const markRequestFinished = async (employeeName, itemName, quantity) => {
+    try {
+      console.log('markRequestFinished called with:', { employeeName, itemName, quantity });
+      console.log('Current requests:', requests);
+      
+      // Find the request to get its ID
+      const request = requests.find(req => 
+        req.employeeName === employeeName && 
+        req.itemName === itemName && 
+        req.quantity === quantity
+      );
+
+      console.log('Found request:', request);
+
+      if (!request) {
+        alert('Request not found. Please try again.');
+        return;
+      }
+
+      // Update status in database - move from approved to finished
+      const response = await fetch(`/api/requests/${request.id}/finish`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({})
+      });
+
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+      
+      // Check if response is HTML (indicates 404 or server error)
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        console.error('Response is not JSON:', contentType);
+        alert('Server error. Please check if the backend server is running and try again.');
+        return;
+      }
+      
+      const result = await response.json();
+      console.log('Response result:', result);
+      
+      if (result.success) {
+        // Update local state
+        const currentDate = new Date().toISOString().split('T')[0];
+        setRequests(prev => prev.map(req => 
+          req.id === request.id 
+            ? { ...req, status: 'Finished', dateFinished: currentDate }
+            : req
+        ));
+        alert('Request marked as finished successfully!');
+      } else {
+        alert('Error marking request as finished: ' + (result.message || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error marking request as finished:', error);
+      alert('Error marking request as finished. Please check your connection and try again.');
+    }
   };
 
   // Function to add a new employee
@@ -73,8 +190,14 @@ export default function App() {
 
   // Logic to handle login and role redirection
   const handleLoginSuccess = async (userData) => {
+    // Validate input data
+    if (!userData || !userData.id || !userData.password) {
+      alert('Please enter both employee ID and password.');
+      return;
+    }
+    
     try {
-      // Use the proxy endpoint (Vite will proxy this to localhost:5000)
+      // Authenticate against the backend API
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
@@ -85,27 +208,59 @@ export default function App() {
           password: userData.password
         })
       });
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        const employee = result.data;
-        setUser(employee);
-        
-        // Role-based navigation based on employee position/department
-        if (employee.position.toLowerCase().includes('hr') || employee.department.toLowerCase().includes('hr')) {
-          setView('hr-reviews');
-        } else if (employee.position.toLowerCase().includes('manager') && employee.department.toLowerCase().includes('store')) {
-          setView('store-manager');
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          const employee = result.data;
+          setUser(employee);
+          
+          // Role-based navigation based on employee position/department
+          const position = employee.position.toLowerCase().trim();
+          const department = employee.department.toLowerCase().trim();
+          
+          // Determine role and navigate accordingly
+          let targetView = 'store'; // Default view for regular employees
+          
+          if (department.includes('hr') || position.includes('hr')) {
+            targetView = 'hr-reviews';
+          } else if (department.includes('store') && position.includes('manager')) {
+            targetView = 'store-manager';
+          }
+          
+          setView(targetView);
         } else {
-          setView('store');
+          alert(result.message || 'Invalid employee ID or password. Please try again.');
         }
       } else {
-        alert(result.message || 'Invalid employee ID or password. Please try again.');
+        // Fallback to local authentication if API is not available
+        const employee = employees.find(emp => {
+          const employeeId = emp.employeeId || emp.employee_id;
+          return employeeId === userData.id;
+        });
+        
+        if (employee && employee.password === userData.password) {
+          setUser(employee);
+          
+          const position = employee.position.toLowerCase().trim();
+          const department = employee.department.toLowerCase().trim();
+          
+          let targetView = 'store';
+          
+          if (department.includes('hr') || position.includes('hr')) {
+            targetView = 'hr-reviews';
+          } else if (department.includes('store') && position.includes('manager')) {
+            targetView = 'store-manager';
+          }
+          
+          setView(targetView);
+        } else {
+          alert('Invalid employee ID or password. Please try again.');
+        }
       }
     } catch (error) {
       console.error('Login error:', error);
-      alert('Login failed. Please check if the server is running.');
+      alert('Login failed. Please check your connection and try again.');
     }
   };
 
@@ -130,10 +285,18 @@ export default function App() {
 
   // Employee Views
   if (view === 'store') {
+    const handleStoreRequest = (selectedItem) => {
+      console.log('handleStoreRequest called with selectedItem:', selectedItem);
+      // Navigate to request form
+      setView('request-form');
+      // Update URL hash for navigation
+      window.location.hash = 'request-form';
+    };
+    
     return (
       <StorePage 
         onBack={handleLogout} 
-        onRequest={() => setView('request-form')} 
+        onRequest={handleStoreRequest} 
         items={inventory} 
         isManager={false}
       />
@@ -149,7 +312,7 @@ export default function App() {
         setInventory={setInventory}
         onViewRequests={() => setView('hr-reviews')}
         onAddItem={() => setView('add-item')}
-        onViewFinished={() => setView('finished-requests')}
+        onViewFinished={() => navigateTo('finished-requests')}
         approvedRequests={requests.filter(req => req.status === 'Approved')}
         onMarkFinished={markRequestFinished}
       />
