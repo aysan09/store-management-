@@ -8,7 +8,7 @@ export default function HRRecords({ onBack, allRequests, onGoToHRReview }) {
   return (
     <div className="hr-records-page">
       <div className="hr-records-header">
-        <button className="back-btn" onClick={onGoToHRReview || onBack}>← Back</button>
+        <button className="back-btn" onClick={() => { console.log('HRRecords back button clicked, calling onBack:', onBack); onBack && onBack(); }} style={{ position: 'absolute', top: '20px', left: '20px' }}>← Back to HR Review</button>
         <h1 className="hr-records-title">HR Records</h1>
         <div style={{ width: '80px' }}></div> {/* Spacer for symmetry */}
       </div>

@@ -58,15 +58,9 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
       const result = await response.json();
       
       if (result.success) {
-        // Update local state
-        setRequests(prev => prev.map(req => 
-          req.id === request.id 
-            ? { 
-                ...req, 
-                status,
-                ...(status === 'Approved' && { dateApproved: new Date().toISOString().split('T')[0] })
-              } 
-            : req
+        // Update local state - remove approved/rejected requests from pending list
+        setRequests(prev => prev.filter(req => 
+          req.id !== request.id
         ));
         
         notifySuccess(successMessage);
@@ -174,17 +168,11 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
         results.push({ id: requestId, success: result.success, message: result.message });
       }
       
-      // Update local state for successful operations
+      // Update local state for successful operations - remove approved/rejected requests
       const successfulIds = results.filter(r => r.success).map(r => r.id);
       if (successfulIds.length > 0) {
-        setRequests(prev => prev.map(req => 
-          successfulIds.includes(req.id) 
-            ? { 
-                ...req, 
-                status,
-                ...(status === 'Approved' && { dateApproved: new Date().toISOString().split('T')[0] })
-              } 
-            : req
+        setRequests(prev => prev.filter(req => 
+          !successfulIds.includes(req.id)
         ));
       }
       
@@ -213,7 +201,7 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
     <>
       <div className="status-page">
         <header className="status-header-row">
-          <button className="back-btn" onClick={onBack}>← Logout</button>
+          <button className="back-btn" onClick={onBack} style={{ position: 'absolute', top: '20px', left: '20px' }}>← Back</button>
           <div className="hr-header-content">
             <h1 className="status-main-title">HR Review</h1>
             <div className="hr-stats">
@@ -341,7 +329,7 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
           {/* Table Content */}
           {sortedRequests.length > 0 ? (
             sortedRequests.map((req, index) => (
-              <div className="hr-table-row" key={req.id || index}>
+              <div className={`hr-table-row ${req.isOutOfStockNotification ? 'out-of-stock-notification-row' : ''}`} key={req.id || index}>
                 <div className="table-cell checkbox-cell">
                   <input
                     type="checkbox"
@@ -363,7 +351,9 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
                   </div>
                 </div>
                 <div className="table-cell quantity-cell">
-                  <span className="quantity-badge">{req.quantity}</span>
+                  <span className={`quantity-badge ${req.isOutOfStockNotification ? 'out-of-stock-badge' : ''}`}>
+                    {req.isOutOfStockNotification ? '⚠️ Out of Stock' : req.quantity}
+                  </span>
                 </div>
                 <div className="table-cell date-cell">
                   <div className="date-info">
@@ -379,11 +369,11 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
                 <div className="table-cell action-cell">
                   <div className="hr-actions">
                     <button 
-                      className="approve-btn" 
+                      className={`approve-btn ${req.isOutOfStockNotification ? 'out-of-stock-approve-btn' : ''}`} 
                       onClick={() => handleAction(req.employeeName, req.itemName, req.quantity, 'Approved')}
                       disabled={loading}
                     >
-                      {loading ? 'Processing...' : 'Approve'}
+                      {loading ? 'Processing...' : req.isOutOfStockNotification ? 'Reorder Item' : 'Approve'}
                     </button>
                     <button 
                       className="reject-btn" 

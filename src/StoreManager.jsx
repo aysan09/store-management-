@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import AddItemModal from "./AddItemModal";
+import { notifySuccess, notifyError } from "./utils/toastUtils";
 import './styles/store-manager-styles.css';
 
 export default function StoreManager({ onBack, inventory, setInventory, onViewRequests }) {
@@ -7,9 +8,77 @@ export default function StoreManager({ onBack, inventory, setInventory, onViewRe
   const [search, setSearch] = useState("");
 
   const handleDelete = (id) => {
-    if (window.confirm("Delete this item?")) {
+    const item = inventory.find(item => item.id === id);
+    if (window.confirm(`Are you sure you want to delete "${item.model}" by ${item.brand}? This action cannot be undone.`)) {
       setInventory(inventory.filter(item => item.id !== id));
+      notifySuccess(`✅ Successfully deleted "${item.model}" from inventory.`);
     }
+  };
+
+  const handleEdit = (item) => {
+    // Create a custom modal for edit confirmation
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    `;
+    
+    modal.innerHTML = `
+      <div style="
+        background: white;
+        padding: 30px;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        text-align: center;
+        max-width: 400px;
+        width: 90%;
+        border: 2px solid #e5e7eb;
+      ">
+        <div style="font-size: 48px; margin-bottom: 15px;">✏️</div>
+        <h3 style="color: #1e40af; margin: 0 0 10px 0; font-size: 20px;">Edit Item</h3>
+        <p style="color: #374151; margin: 0 0 20px 0; font-size: 14px; line-height: 1.5;">
+          You are about to edit <strong>"${item.model}"</strong> by <strong>${item.brand}</strong>
+        </p>
+        <div style="display: flex; gap: 10px; justify-content: center;">
+          <button onclick="this.closest('.modal-overlay').remove()" style="
+            background: #64748b;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 12px;
+          ">Cancel</button>
+          <button onclick="this.closest('.modal-overlay').remove(); alert('Edit functionality for \\"${item.model}\\" would open here.')" style="
+            background: linear-gradient(135deg, #1e40af, #1e3a8a);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 12px;
+          ">Edit Item</button>
+        </div>
+      </div>
+    `;
+    
+    modal.className = 'modal-overlay';
+    document.body.appendChild(modal);
   };
 
   // Calculate statistics
@@ -27,7 +96,7 @@ export default function StoreManager({ onBack, inventory, setInventory, onViewRe
   return (
     <div className="store-manager-page">
       <div className="store-manager-header">
-        <button className="back-btn" onClick={onBack}>← Logout</button>
+        <button className="back-btn" onClick={onBack} style={{ position: 'relative' }}>← Logout</button>
         <h1 className="store-manager-title">Store Manager</h1>
         <div style={{display: 'flex', gap: '10px'}}>
           <button className="records-btn" style={{background: '#059669'}} onClick={() => setShowAddModal(true)}>+ Add New Item</button>
@@ -116,6 +185,7 @@ export default function StoreManager({ onBack, inventory, setInventory, onViewRe
 
               <div className="table-cell action-cell">
                 <div className="store-actions">
+                  <button className="edit-btn" onClick={() => handleEdit(item)}>Edit</button>
                   <button className="delete-btn" onClick={() => handleDelete(item.id)}>Delete</button>
                 </div>
               </div>

@@ -1,6 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
-const { pool } = require('../config/db');
+const { db } = require('../config/db');
 
 const router = express.Router();
 
@@ -9,10 +9,10 @@ const router = express.Router();
 // @access  Private
 router.get('/', async (req, res) => {
   try {
-    const [rows] = await pool.execute(
+    const [rows] = await db.execute(
       'SELECT id, name, department, position, employee_id, date_created FROM employees ORDER BY date_created DESC'
     );
-    
+
     res.json({
       success: true,
       count: rows.length,
@@ -32,12 +32,14 @@ router.get('/', async (req, res) => {
 // @access  Private
 router.get('/:id', async (req, res) => {
   try {
-    const [rows] = await pool.execute(
+    const [rows] = await db.execute(
       'SELECT id, name, department, position, employee_id, date_created FROM employees WHERE id = ?',
       [req.params.id]
     );
 
-    if (rows.length === 0) {
+    const employee = rows[0];
+
+    if (!employee) {
       return res.status(404).json({
         success: false,
         message: 'Employee not found'
@@ -46,7 +48,7 @@ router.get('/:id', async (req, res) => {
 
     res.json({
       success: true,
-      data: rows[0]
+      data: employee
     });
   } catch (error) {
     console.error('Get employee error:', error);
@@ -73,7 +75,7 @@ router.post('/', async (req, res) => {
     }
 
     // Check if employee ID already exists
-    const [existingRows] = await pool.execute(
+    const [existingRows] = await db.execute(
       'SELECT * FROM employees WHERE employee_id = ?',
       [employee_id]
     );
@@ -86,10 +88,9 @@ router.post('/', async (req, res) => {
     }
 
     // Hash password
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    const [result] = await pool.execute(
+    const [result] = await db.execute(
       'INSERT INTO employees (name, department, position, employee_id, password) VALUES (?, ?, ?, ?, ?)',
       [name, department, position, employee_id, hashedPassword]
     );
@@ -124,7 +125,7 @@ router.put('/:id', async (req, res) => {
     const { name, department, position, employee_id, password } = req.body;
 
     // Check if employee exists
-    const [existingRows] = await pool.execute(
+    const [existingRows] = await db.execute(
       'SELECT * FROM employees WHERE id = ?',
       [req.params.id]
     );
@@ -136,9 +137,11 @@ router.put('/:id', async (req, res) => {
       });
     }
 
+    const existingEmployee = existingRows[0];
+
     // Check if employee ID is being changed and if it already exists
-    if (employee_id && employee_id !== existingRows[0].employee_id) {
-      const [duplicateRows] = await pool.execute(
+    if (employee_id && employee_id !== existingEmployee.employee_id) {
+      const [duplicateRows] = await db.execute(
         'SELECT * FROM employees WHERE employee_id = ? AND id != ?',
         [employee_id, req.params.id]
       );
@@ -152,15 +155,22 @@ router.put('/:id', async (req, res) => {
     }
 
     // Hash password if provided
-    let hashedPassword = existingRows[0].password;
+    let hashedPassword = existingEmployee.password;
     if (password) {
-      const saltRounds = 10;
-      hashedPassword = await bcrypt.hash(password, saltRounds);
+      hashedPassword = await bcrypt.hash(password, 10);
     }
 
-    const [result] = await pool.execute(
+    // Update employee
+    await db.execute(
       'UPDATE employees SET name = ?, department = ?, position = ?, employee_id = ?, password = ?, updated_at = NOW() WHERE id = ?',
-      [name || existingRows[0].name, department || existingRows[0].department, position || existingRows[0].position, employee_id || existingRows[0].employee_id, hashedPassword, req.params.id]
+      [
+        name || existingEmployee.name,
+        department || existingEmployee.department,
+        position || existingEmployee.position,
+        employee_id || existingEmployee.employee_id,
+        hashedPassword,
+        req.params.id
+      ]
     );
 
     res.json({
@@ -168,10 +178,10 @@ router.put('/:id', async (req, res) => {
       message: 'Employee updated successfully',
       data: {
         id: req.params.id,
-        name: name || existingRows[0].name,
-        department: department || existingRows[0].department,
-        position: position || existingRows[0].position,
-        employee_id: employee_id || existingRows[0].employee_id
+        name: name || existingEmployee.name,
+        department: department || existingEmployee.department,
+        position: position || existingEmployee.position,
+        employee_id: employee_id || existingEmployee.employee_id
       }
     });
 
@@ -190,7 +200,7 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     // Check if employee exists
-    const [existingRows] = await pool.execute(
+    const [existingRows] = await db.execute(
       'SELECT * FROM employees WHERE id = ?',
       [req.params.id]
     );
@@ -205,7 +215,7 @@ router.delete('/:id', async (req, res) => {
     // Prevent deletion of the employee themselves (you might want to add authentication for this)
     // For now, we'll allow deletion but you should add proper authorization
 
-    await pool.execute(
+    await db.execute(
       'DELETE FROM employees WHERE id = ?',
       [req.params.id]
     );
@@ -251,7 +261,7 @@ router.get('/search', async (req, res) => {
 
     query += ' ORDER BY date_created DESC';
 
-    const [rows] = await pool.execute(query, queryParams);
+    const [rows] = await db.execute(query, queryParams);
 
     res.json({
       success: true,

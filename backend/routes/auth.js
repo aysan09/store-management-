@@ -1,6 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
-const { pool } = require('../config/db');
+const { db } = require('../config/db');
 
 const router = express.Router();
 
@@ -21,23 +21,31 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    console.log('Looking for employee with ID:', employee_id);
+
     // Find employee by employee ID
-    const [rows] = await pool.execute(
+    const [rows] = await db.execute(
       'SELECT id, name, department, position, employee_id, password, date_created FROM employees WHERE employee_id = ?',
       [employee_id]
     );
 
-    if (rows.length === 0) {
+    const employee = rows[0];
+
+    console.log('Employee lookup result:', employee ? 'Found' : 'Not found');
+
+    if (!employee) {
       return res.status(401).json({
         success: false,
         message: 'Invalid employee ID or password'
       });
     }
 
-    const employee = rows[0];
+    console.log('Employee found, comparing password...');
 
     // Compare password with hashed password in database
     const isPasswordValid = await bcrypt.compare(password, employee.password);
+
+    console.log('Password valid:', isPasswordValid);
 
     if (!isPasswordValid) {
       return res.status(401).json({

@@ -111,7 +111,7 @@ export default function EmployeeRegistration({ onBack, onAddEmployee }) {
       <div className="employee-registration-container">
         {/* Header Section */}
         <div className="registration-header">
-          <button className="back-btn" onClick={onBack}>← Back</button>
+          <button className="back-btn" onClick={onBack} style={{ position: 'relative' }}>← Back</button>
           <div className="header-content">
             <h1 className="registration-title">Employee Registration</h1>
             <p className="registration-subtitle">Add new employees to the system</p>

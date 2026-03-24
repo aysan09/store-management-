@@ -2,7 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { pool } = require('../config/db');
+const { db } = require('../config/db');
 
 const router = express.Router();
 
@@ -39,7 +39,7 @@ const upload = multer({
 // @access  Public
 router.get('/', async (req, res) => {
   try {
-    const [rows] = await pool.execute(
+    const [rows] = await db.execute(
       'SELECT *, DATE_FORMAT(date_added, "%Y-%m-%d %H:%i:%s") as date_added_formatted FROM items ORDER BY date_added DESC'
     );
 
@@ -62,7 +62,7 @@ router.get('/', async (req, res) => {
 // @access  Public
 router.get('/:id', async (req, res) => {
   try {
-    const [rows] = await pool.execute(
+    const [rows] = await db.execute(
       'SELECT * FROM items WHERE id = ?',
       [req.params.id]
     );
@@ -112,7 +112,7 @@ router.post('/', upload.single('photo'), async (req, res) => {
 
     const photo = req.file ? `/uploads/${req.file.filename}` : null;
 
-    const [result] = await pool.execute(
+    const [result] = await db.execute(
       'INSERT INTO items (model, brand, category, quantity, photo) VALUES (?, ?, ?, ?, ?)',
       [model, brand, category, parseInt(quantity), photo]
     );
@@ -154,7 +154,7 @@ router.put('/:id', upload.single('photo'), async (req, res) => {
     const { model, brand, category, quantity } = req.body;
 
     // Check if item exists
-    const [existingRows] = await pool.execute(
+    const [existingRows] = await db.execute(
       'SELECT * FROM items WHERE id = ?',
       [req.params.id]
     );
@@ -168,7 +168,7 @@ router.put('/:id', upload.single('photo'), async (req, res) => {
 
     const photo = req.file ? `/uploads/${req.file.filename}` : existingRows[0].photo;
 
-    const [result] = await pool.execute(
+    const [result] = await db.execute(
       'UPDATE items SET model = ?, brand = ?, category = ?, quantity = ?, photo = ?, updated_at = NOW() WHERE id = ?',
       [model, brand, category, parseInt(quantity), photo, req.params.id]
     );
@@ -207,7 +207,7 @@ router.put('/:id', upload.single('photo'), async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     // Check if item exists
-    const [existingRows] = await pool.execute(
+    const [existingRows] = await db.execute(
       'SELECT * FROM items WHERE id = ?',
       [req.params.id]
     );
@@ -219,7 +219,7 @@ router.delete('/:id', async (req, res) => {
       });
     }
 
-    await pool.execute(
+    await db.execute(
       'DELETE FROM items WHERE id = ?',
       [req.params.id]
     );

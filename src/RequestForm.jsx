@@ -4,6 +4,7 @@ import { ToastContainer } from 'react-toastify';
 import { notifySuccess, notifyError } from './utils/toastUtils';
 import 'react-toastify/dist/ReactToastify.css';
 import './styles.css';
+import './styles/enhanced-request-form-styles.css';
 
 export default function RequestForm({ onBack, onViewStatus, items, onAddRequest, user }) {
   const [selectedId, setSelectedId] = useState(items[0]?.id || "");
@@ -74,7 +75,7 @@ export default function RequestForm({ onBack, onViewStatus, items, onAddRequest,
   return (
     <>
       <div className="request-page">
-        <button className="back-btn" onClick={onBack}>←</button>
+        <button className="back-btn" onClick={onBack} style={{ position: 'absolute', top: '20px', left: '20px' }}>←</button>
         <h1 className="request-main-title">Requesting Form</h1>
         <div className="request-layout">
           <div className="request-card-form">

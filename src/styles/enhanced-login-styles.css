@@ -1,0 +1,607 @@
+/* Enhanced Login Page Styles with Robot Character */
+
+/* Page Layout */
+.login-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  margin: 0;
+  overflow-x: hidden;
+}
+
+/* Back Button */
+.back {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 25px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+}
+
+.back:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+/* Login Card */
+.login-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 24px;
+  padding: 60px 40px 40px 40px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  width: 100%;
+  max-width: 400px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  min-height: 500px;
+}
+
+.login-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 50% 0%, rgba(30, 64, 175, 0.1) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+/* Robot Character Avatar */
+.robot-avatar {
+  position: absolute;
+  top: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 140px;
+  height: 140px;
+  z-index: 10;
+  transition: all 0.3s ease;
+}
+
+.robot-character {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Robot Body */
+.robot-body {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%);
+  border-radius: 50%;
+  box-shadow: 
+    0 10px 30px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  border: 2px solid rgba(30, 64, 175, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.robot-head {
+  width: 100px;
+  height: 100px;
+  background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+  border-radius: 50%;
+  box-shadow: 
+    0 8px 20px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  border: 2px solid rgba(30, 64, 175, 0.2);
+  position: relative;
+  margin-bottom: 10px;
+}
+
+.robot-eyes {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  gap: 10px;
+}
+
+.robot-eye {
+  width: 17px;
+  height: 8px;
+  background: linear-gradient(180deg, #1e40af 0%, #1e3a8a 100%);
+  border-radius: 2px;
+  box-shadow: 0 0 10px rgba(30, 64, 175, 0.8);
+  animation: blink 4s infinite;
+}
+
+.robot-eye::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 4px;
+  height: 4px;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
+}
+
+/* Robot Arms */
+.robot-arms {
+  position: absolute;
+  top: 45px;
+  left: 0;
+  right: 0;
+  height: 100px;
+  pointer-events: none;
+}
+
+.robot-arm {
+  position: absolute;
+  width: 24px;
+  height: 48px;
+  background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: top center;
+}
+
+.robot-arm.left {
+  left: -10px;
+}
+
+.robot-arm.right {
+  right: -10px;
+}
+
+/* Robot Hands */
+.robot-hand {
+  position: absolute;
+  width: 28px;
+  height: 30px; /* Increased from 18px to 30px for longer hands */
+  background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  transition:all;
+  top: 40px;
+  left: -2px;
+  transform-origin: top center;
+}
+
+.robot-hand.left {
+  /* Positioned relative to left arm */
+}
+
+.robot-hand.right {
+  /* Positioned relative to right arm */
+}
+
+/* Robot Grippers */
+.robot-gripper {
+  position: absolute;
+  width: 10px;
+  height: 14px;
+  background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+  border-radius: 3px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.robot-gripper.left {
+  left: -5px;
+  top: 2px;
+}
+
+.robot-gripper.right {
+  right: -5px;
+  top: 2px;
+}
+
+/* Animation States */
+.robot-character.is-hiding .robot-arm.left {
+  transform: rotate(45deg);
+}
+
+.robot-character.is-hiding .robot-arm.right {
+  transform: rotate(-45deg);
+}
+
+.robot-character.is-hiding .robot-hand.left {
+  transform: rotate(45deg) translateY(-20px);
+}
+
+.robot-character.is-hiding .robot-hand.right {
+  transform: rotate(-45deg) translateY(-20px);
+}
+
+/* Brand Logo */
+.login-brand {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 20px auto;
+  display: block;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+}
+
+/* Title */
+.login-title {
+  color: #111827;
+  font-size: 28px;
+  font-weight: 800;
+  text-align: center;
+  margin: 0 0 30px 0;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Form */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Form Fields */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field-label {
+  color: #374151;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.field-input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid rgba(30, 64, 175, 0.2);
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #111827;
+  background: rgba(255, 255, 255, 0.8);
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.field-input:focus {
+  border-color: #1e40af;
+  box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+  background: white;
+}
+
+.field-input::placeholder {
+  color: #9ca3af;
+}
+
+/* Password Input Container */
+.password-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* Password Input Animation */
+.password-input:focus {
+  border-color: #1e40af;
+  box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+  background: white;
+}
+
+/* Password Toggle Button */
+.password-toggle-btn {
+  position: absolute;
+  right: 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  font-size: 18px;
+  line-height: 1;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+}
+
+.password-toggle-btn:hover {
+  background: rgba(30, 64, 175, 0.1);
+  transform: scale(1.1);
+}
+
+.password-toggle-btn:focus-visible {
+  outline: 2px solid #1e40af;
+  outline-offset: 2px;
+}
+
+/* Robot Character Animation on Password Focus */
+.password-input:focus ~ .login-btn {
+  /* This selector is not needed for the robot animation */
+}
+
+/* Robot Character Animation when password field is focused */
+.robot-character.is-hiding .robot-arm.left {
+  transform: rotate(-45deg);
+}
+
+.robot-character.is-hiding .robot-arm.right {
+  transform: rotate(45deg);
+}
+
+.robot-character.is-hiding .robot-hand.left {
+  transform: rotate(45deg) translateY(-20px);
+}
+
+.robot-character.is-hiding .robot-hand.right {
+  transform: rotate(-45deg) translateY(-20px);
+}
+
+/* Robot Eyes Animation when hiding */
+.robot-character.is-hiding .robot-eye {
+  height: 2px;
+  opacity: 0.3;
+  
+}
+
+.robot-character.is-hiding .robot-eye::after {
+  opacity: 0;
+}
+
+/* Visual Clipping Fix - Ensure robot doesn't get cut off */
+.robot-avatar {
+  top: -10px; /* Move up to prevent clipping */
+  z-index: 10;
+  transition: all 0.3s ease;
+}
+
+.robot-character {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Enhanced Login Card to prevent clipping */
+.login-card {
+  padding: 70px 40px 40px 40px; /* Increased top padding */
+  min-height: 520px; /* Increased minimum height */
+}
+
+/* Submit Button */
+.login-btn {
+  width: 100%;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 8px 20px rgba(30, 64, 175, 0.3);
+}
+
+.login-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 25px rgba(30, 64, 175, 0.4);
+  background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+}
+
+.login-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 15px rgba(30, 64, 175, 0.3);
+}
+
+/* Animations */
+@keyframes blink {
+  0%, 90%, 100% {
+    opacity: 1;
+  }
+  95% {
+    opacity: 0;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.robot-character {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+  .login-card {
+    padding: 30px 20px;
+    max-width: 90%;
+  }
+  
+  .robot-avatar {
+    top: -50px;
+    width: 100px;
+    height: 100px;
+  }
+  
+  .login-brand {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .login-title {
+    font-size: 24px;
+  }
+  
+  .field-input {
+    padding: 12px 14px;
+    font-size: 16px;
+  }
+  
+  .login-btn {
+    padding: 12px 14px;
+    font-size: 16px;
+  }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .login-page {
+    background: #ffffff;
+  }
+  
+  .login-card {
+    background: #ffffff;
+    border: 2px solid #000000;
+    color: #000000;
+  }
+  
+  .robot-body {
+    background: #ffffff;
+    border: 2px solid #000000;
+  }
+  
+  .robot-head {
+    background: #ffffff;
+    border: 2px solid #000000;
+  }
+  
+  .robot-eyes {
+    background: #000000;
+  }
+  
+  .login-title {
+    color: #000000;
+  }
+  
+  .field-label {
+    color: #000000;
+  }
+  
+  .field-input {
+    background: #ffffff;
+    border: 2px solid #000000;
+    color: #000000;
+  }
+  
+  .login-btn {
+    background: #000000;
+    color: #ffffff;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .robot-character {
+    animation: none;
+  }
+  
+  .robot-character.covering-eyes .robot-arm,
+  .robot-character.covering-eyes .robot-hand {
+    transition: none;
+  }
+}
+
+/* Focus and Accessibility */
+.login-btn:focus-visible {
+  outline: 3px solid #1e40af;
+  outline-offset: 2px;
+}
+
+.field-input:focus-visible {
+  outline: 3px solid #1e40af;
+  outline-offset: 2px;
+}
+
+/* Enhanced Visual Effects */
+.login-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #1e40af, #1e3a8a, #1e40af);
+  opacity: 0.5;
+}
+
+/* Subtle Patterns */
+.robot-body::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: -5px;
+  right: -5px;
+  bottom: -5px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1e40af, #1e3a8a);
+  filter: blur(10px);
+  opacity: 0.3;
+  z-index: -1;
+}
+
+/* Enhanced Shadows */
+.robot-body,
+.robot-head {
+  box-shadow: 
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+/* Glassmorphism Enhancement */
+.login-card {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: saturate(180%) blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.login-card:hover {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(255, 255, 255, 0.4);
+}

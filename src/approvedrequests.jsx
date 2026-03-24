@@ -32,7 +32,7 @@ export default function ApprovedRequests({ onBack }) {
   return (
     <div className="status-page">
       <header className="status-header-row">
-        <button className="back-btn" onClick={onBack}>← Back</button>
+        <button className="back-btn" onClick={onBack} style={{ position: 'relative' }}>← Back</button>
         <h1 className="status-main-title">Approved Requests</h1>
         <div style={{ width: '80px' }}></div> {/* Spacer for symmetry */}
       </header>

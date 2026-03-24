@@ -1,5 +1,5 @@
 const express = require('express');
-const { pool } = require('../config/db');
+const { db } = require('../config/db');
 
 const router = express.Router();
 
@@ -8,8 +8,8 @@ const router = express.Router();
 // @access  Private
 router.get('/', async (req, res) => {
   try {
-    const [rows] = await pool.execute(
-      'SELECT id, employee_name as employeeName, item_name as itemName, quantity, purpose, date_added as dateAdded, date_approved as dateApproved, date_finished as dateFinished, status FROM requests ORDER BY date_added DESC'
+    const [rows] = await db.execute(
+      'SELECT id, employee_name AS employeeName, item_name AS itemName, quantity, purpose, date_added AS dateAdded, date_approved AS dateApproved, date_finished AS dateFinished, status FROM requests ORDER BY date_added DESC'
     );
 
     res.json({
@@ -42,8 +42,8 @@ router.get('/status/:status', async (req, res) => {
       });
     }
 
-    const [rows] = await pool.execute(
-      'SELECT id, employee_name as employeeName, item_name as itemName, quantity, purpose, date_added as dateAdded, date_approved as dateApproved, date_finished as dateFinished, status FROM requests WHERE status = ? ORDER BY date_added DESC',
+    const [rows] = await db.execute(
+      'SELECT id, employee_name AS employeeName, item_name AS itemName, quantity, purpose, date_added AS dateAdded, date_approved AS dateApproved, date_finished AS dateFinished, status FROM requests WHERE status = ? ORDER BY date_added DESC',
       [status]
     );
 
@@ -85,7 +85,7 @@ router.post('/', async (req, res) => {
       });
     }
 
-    const [result] = await pool.execute(
+    const [result] = await db.execute(
       'INSERT INTO requests (employee_name, item_name, quantity, purpose, status) VALUES (?, ?, ?, ?, ?)',
       [employeeName, itemName, parseInt(quantity), purpose || null, 'Pending']
     );
@@ -121,7 +121,7 @@ router.put('/:id/approve', async (req, res) => {
     const requestId = req.params.id;
 
     // Get the request
-    const [rows] = await pool.execute(
+    const [rows] = await db.execute(
       'SELECT * FROM requests WHERE id = ?',
       [requestId]
     );
@@ -144,7 +144,7 @@ router.put('/:id/approve', async (req, res) => {
     }
 
     // Update status to Approved and set date_approved
-    await pool.execute(
+    await db.execute(
       'UPDATE requests SET status = ?, date_approved = NOW() WHERE id = ?',
       ['Approved', requestId]
     );
@@ -174,14 +174,14 @@ router.put('/:id/approve', async (req, res) => {
 });
 
 // @route   PUT /api/requests/:id/finish
-// @desc    Finish request (change status to Finished)
+// @desc    Finish request (change status to Finished and decrease item quantity)
 // @access  Private
 router.put('/:id/finish', async (req, res) => {
   try {
     const requestId = req.params.id;
 
     // Get the request
-    const [rows] = await pool.execute(
+    const [rows] = await db.execute(
       'SELECT * FROM requests WHERE id = ?',
       [requestId]
     );
@@ -203,15 +203,52 @@ router.put('/:id/finish', async (req, res) => {
       });
     }
 
-    // Update status to Finished and set date_finished
-    await pool.execute(
+    // Check if request is approved (only approved requests can be finished)
+    if (request.status !== 'Approved') {
+      return res.status(400).json({
+        success: false,
+        message: 'Only approved requests can be marked as finished'
+      });
+    }
+
+    // Get the item to check quantity
+    const [itemRows] = await db.execute(
+      'SELECT * FROM items WHERE model = ?',
+      [request.item_name]
+    );
+
+    if (itemRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Item not found in inventory'
+      });
+    }
+
+    const item = itemRows[0];
+
+    // Check if there's enough quantity
+    if (item.quantity < request.quantity) {
+      return res.status(400).json({
+        success: false,
+        message: `Insufficient quantity. Available: ${item.quantity}, Requested: ${request.quantity}`
+      });
+    }
+
+    // Update item quantity (decrease by request quantity)
+    await db.execute(
+      'UPDATE items SET quantity = quantity - ? WHERE model = ?',
+      [request.quantity, request.item_name]
+    );
+
+    // Update request status to Finished and set date_finished
+    await db.execute(
       'UPDATE requests SET status = ?, date_finished = NOW() WHERE id = ?',
       ['Finished', requestId]
     );
 
     res.json({
       success: true,
-      message: 'Request finished successfully',
+      message: 'Request finished successfully and item quantity updated',
       data: {
         id: requestId,
         employeeName: request.employee_name,
@@ -242,7 +279,7 @@ router.delete('/:id', async (req, res) => {
     const requestId = req.params.id;
 
     // Check if request exists
-    const [rows] = await pool.execute(
+    const [rows] = await db.execute(
       'SELECT * FROM requests WHERE id = ?',
       [requestId]
     );
@@ -254,7 +291,7 @@ router.delete('/:id', async (req, res) => {
       });
     }
 
-    await pool.execute(
+    await db.execute(
       'DELETE FROM requests WHERE id = ?',
       [requestId]
     );
@@ -281,7 +318,7 @@ router.delete('/:id/reject', async (req, res) => {
     const requestId = req.params.id;
 
     // Check if request exists
-    const [rows] = await pool.execute(
+    const [rows] = await db.execute(
       'SELECT * FROM requests WHERE id = ?',
       [requestId]
     );
@@ -293,7 +330,7 @@ router.delete('/:id/reject', async (req, res) => {
       });
     }
 
-    await pool.execute(
+    await db.execute(
       'DELETE FROM requests WHERE id = ?',
       [requestId]
     );
@@ -311,5 +348,6 @@ router.delete('/:id/reject', async (req, res) => {
     });
   }
 });
+
 
 module.exports = router;

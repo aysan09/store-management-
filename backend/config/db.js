@@ -1,9 +1,10 @@
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcryptjs');
+require('dotenv').config();
 
-// Database connection configuration
-const dbConfig = {
-  host: process.env.DB_HOST || 'localhost',
+// Create MySQL connection pool
+const db = mysql.createPool({
+  host: process.env.DB_HOST || '127.0.0.1',
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'store_management',
@@ -11,100 +12,102 @@ const dbConfig = {
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
-};
-
-// Create connection pool
-const pool = mysql.createPool(dbConfig);
+});
 
 // Test database connection
 async function testConnection() {
   try {
-    const connection = await pool.getConnection();
-    console.log('✅ Database connected successfully');
+    const connection = await db.getConnection();
+    await connection.execute('SELECT 1 as test');
     connection.release();
-  } catch (error) {
-    console.error('❌ Database connection failed:', error.message);
-    console.error('Error details:', {
-      code: error.code,
-      errno: error.errno,
-      sqlMessage: error.sqlMessage,
-      sqlState: error.sqlState
-    });
-    process.exit(1);
+    console.log('✅ MySQL database connection test passed');
+    return true;
+  } catch (err) {
+    console.error('❌ MySQL database connection failed:', err.message);
+    throw err;
   }
 }
 
 // Initialize database tables
 async function initDatabase() {
   try {
-    const connection = await pool.getConnection();
-
     // Create employees table
-    await connection.execute(`
+    await db.execute(`
       CREATE TABLE IF NOT EXISTS employees (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(100) NOT NULL,
-        department VARCHAR(50) NOT NULL,
-        position VARCHAR(50) NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        department VARCHAR(100) NOT NULL,
+        position VARCHAR(100) NOT NULL,
         employee_id VARCHAR(50) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL,
-        date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        date_created DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
     `);
+    console.log('✅ Employees table created successfully');
 
     // Create items table
-    await connection.execute(`
+    await db.execute(`
       CREATE TABLE IF NOT EXISTS items (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        model VARCHAR(100) NOT NULL,
-        brand VARCHAR(100) NOT NULL,
-        category VARCHAR(50) NOT NULL,
+        model VARCHAR(255) NOT NULL,
+        brand VARCHAR(255) NOT NULL,
+        category VARCHAR(100) NOT NULL,
         quantity INT NOT NULL DEFAULT 0,
-        photo VARCHAR(255),
-        date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        photo VARCHAR(500),
+        date_added DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
     `);
+    console.log('✅ Items table created successfully');
 
     // Create unified requests table with status column
-    await connection.execute(`
+    await db.execute(`
       CREATE TABLE IF NOT EXISTS requests (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        employee_name VARCHAR(100) NOT NULL,
-        item_name VARCHAR(100) NOT NULL,
+        employee_name VARCHAR(255) NOT NULL,
+        item_name VARCHAR(255) NOT NULL,
         quantity INT NOT NULL,
         purpose TEXT,
-        status ENUM('Pending', 'Approved', 'Finished') DEFAULT 'Pending',
-        date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        date_approved TIMESTAMP NULL,
-        date_finished TIMESTAMP NULL,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        status VARCHAR(50) DEFAULT 'Pending',
+        date_added DATETIME DEFAULT CURRENT_TIMESTAMP,
+        date_approved DATETIME,
+        date_finished DATETIME,
+       
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
     `);
+    console.log('✅ Requests table created successfully');
 
-    // Insert default employees if table is empty
-    const [employeeCount] = await connection.execute('SELECT COUNT(*) as count FROM employees');
-    if (employeeCount[0].count === 0) {
+    // Check if employees table has data
+    const [rows] = await db.execute('SELECT COUNT(*) as count FROM employees');
+    const employeeCount = rows[0].count;
+
+    if (employeeCount === 0) {
+      // Insert default employees
       const hrPassword = await bcrypt.hash('hr123', 10);
       const storePassword = await bcrypt.hash('store123', 10);
 
-      await connection.execute(`
+      await db.execute(`
         INSERT INTO employees (name, department, position, employee_id, password) VALUES
         (?, ?, ?, ?, ?),
         (?, ?, ?, ?, ?)
       `, ['HR Manager', 'HR', 'Manager', 'HR100', hrPassword, 'Store Manager', 'Store', 'Manager', 'STORE100', storePassword]);
+
+      console.log('✅ Default employees inserted successfully');
+    } else {
+      console.log('✅ Employees table already has data');
     }
 
-    connection.release();
-    console.log('✅ Database tables initialized successfully');
-  } catch (error) {
-    console.error('❌ Error initializing database:', error.message);
+    console.log('✅ MySQL database tables initialized successfully');
+  } catch (err) {
+    console.error('❌ Error initializing MySQL database:', err.message);
+    throw err;
   }
 }
 
 module.exports = {
-  pool,
+  db,
   testConnection,
   initDatabase
 };

@@ -142,6 +142,19 @@ export default function App() {
         return;
       }
 
+      // Find the item in inventory to decrease quantity
+      const item = inventory.find(invItem => invItem.model === itemName);
+      if (!item) {
+        alert('Item not found in inventory. Please check the item name.');
+        return;
+      }
+
+      // Check if there's enough quantity in stock
+      if (item.quantity < quantity) {
+        alert(`Insufficient stock! Only ${item.quantity} ${itemName}(s) available, but ${quantity} requested.`);
+        return;
+      }
+
       // Update status in database - move from approved to finished
       const response = await fetch(`/api/requests/${request.id}/finish`, {
         method: 'PUT',
@@ -166,14 +179,44 @@ export default function App() {
       console.log('Response result:', result);
       
       if (result.success) {
-        // Update local state
-        const currentDate = new Date().toISOString().split('T')[0];
-        setRequests(prev => prev.map(req => 
-          req.id === request.id 
-            ? { ...req, status: 'Finished', dateFinished: currentDate }
-            : req
-        ));
-        alert('Request marked as finished successfully!');
+        // Update item quantity in database
+        const itemResponse = await fetch(`/api/items/${item.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: item.model,
+            brand: item.brand,
+            category: item.category,
+            quantity: item.quantity - quantity
+          })
+        });
+
+        const itemResult = await itemResponse.json();
+        
+        if (itemResult.success) {
+          // Update local state
+          const currentDate = new Date().toISOString().split('T')[0];
+          
+          // Update requests state
+          setRequests(prev => prev.map(req => 
+            req.id === request.id 
+              ? { ...req, status: 'Finished', dateFinished: currentDate }
+              : req
+          ));
+          
+          // Update inventory state
+          setInventory(prev => prev.map(invItem => 
+            invItem.id === item.id 
+              ? { ...invItem, quantity: invItem.quantity - quantity }
+              : invItem
+          ));
+          
+          alert(`Request marked as finished successfully! ${quantity} ${itemName}(s) have been deducted from inventory.`);
+        } else {
+          alert('Request marked as finished, but failed to update inventory: ' + (itemResult.message || 'Unknown error'));
+        }
       } else {
         alert('Error marking request as finished: ' + (result.message || 'Unknown error'));
       }
@@ -389,7 +432,7 @@ export default function App() {
   if (view === 'hr-records') {
     return (
       <HRRecords 
-        onBack={handleLogout} 
+        onBack={() => setView('hr-reviews')} 
         allRequests={requests}
         onGoToHRReview={() => setView('hr-reviews')}
       />
@@ -411,6 +454,11 @@ export default function App() {
         onAddEmployee={handleAddEmployee}
       />
     );
+  }
+
+  // About Page View
+  if (view === 'about') {
+    return <AboutPage onBack={() => setView('hero')} />;
   }
 
   // Default Hero Page with About Section

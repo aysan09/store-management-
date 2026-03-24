@@ -5,9 +5,9 @@ const path = require('path');
 
 // Import routes
 const authRoutes = require('./routes/auth');
-const itemRoutes = require('./routes/items');
 const requestRoutes = require('./routes/requests');
 const employeeRoutes = require('./routes/employees');
+const itemRoutes = require('./routes/items');
 const sqlRoutes = require('./routes/sql');
 
 // Import middleware
@@ -44,14 +44,14 @@ app.get('/api', (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
-app.use('/api/items', itemRoutes);
 app.use('/api/requests', requestRoutes);
 app.use('/api/employees', employeeRoutes);
+app.use('/api/items', itemRoutes);
 app.use('/api/sql', sqlRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-  res.json({ 
+  res.json({
     message: 'Store Management Backend API is running',
     status: 'healthy',
     timestamp: new Date().toISOString()
@@ -65,13 +65,13 @@ app.use(errorHandler);
 async function startServer() {
   try {
     const { testConnection, initDatabase } = require('./config/db');
-    
+
     // Test database connection
     await testConnection();
-    
+
     // Initialize database tables
     await initDatabase();
-    
+
     // Start server
     app.listen(PORT, () => {
       console.log(`✅ Server running on port ${PORT}`);

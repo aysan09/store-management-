@@ -25,7 +25,7 @@
 html, body, #root {
   height: 100%;
   letter-spacing: 1px;
-  font-family: 'Electrolize';
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 html, body {
@@ -35,7 +35,7 @@ html, body {
 
 body {
   margin: 0;
-  font-family: 'Electrolize', Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   background: var(--muted);
 }
 
@@ -45,7 +45,7 @@ body {
   height: 100vh;
   overflow-y: scroll;
   scroll-behavior: unset;
-  font-family: 'Electrolize';
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   font-size: medium;
 }
 
@@ -54,7 +54,7 @@ body {
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
   min-height: 100vh;
   padding: 40px 20px;
-  font-family: 'Electrolize', sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 .employee-registration-container {
@@ -92,7 +92,7 @@ body {
 
 .registration-layout {
   display: grid;
-  grid-template-columns: 1.2fr 1fr;
+  grid-template-columns: 1.5fr 1.2fr;
   gap: 30px;
 }
 
@@ -166,7 +166,7 @@ body {
 
 .form-input {
   width: 100%;
-  padding: 14px 16px 14px 45px;
+  padding: 14px 16px 14px 55px;
   border: 2px solid #e5e7eb;
   border-radius: 12px;
   font-size: 14px;
@@ -183,11 +183,19 @@ body {
 
 .input-icon {
   position: absolute;
-  left: 14px;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
   color: #9ca3af;
   font-size: 16px;
   pointer-events: none;
   z-index: 1;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+.form-input:focus + .input-icon {
+  opacity: 0;
 }
 
 .password-wrapper {
@@ -546,7 +554,7 @@ body {
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
   min-height: 100vh;
   padding: 40px 20px;
-  font-family: 'Electrolize', sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 .employee-management-header {

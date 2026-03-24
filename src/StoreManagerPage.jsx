@@ -7,6 +7,7 @@ import {
   XCircle as ErrorIcon, AlertTriangle as WarningIcon
 } from 'lucide-react';
 import './styles/store-manager-styles.css';
+import './styles/enhanced-modals-styles.css';
 
 export default function StoreManagerPage({ 
   onBack, inventory, setInventory, onAddItem, approvedRequests, onMarkFinished, onViewFinished 
@@ -22,6 +23,8 @@ export default function StoreManagerPage({
   const [sortBy, setSortBy] = useState('model');
   const [sortOrder, setSortOrder] = useState('asc');
   const [selectedItems, setSelectedItems] = useState(new Set());
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(5);
 
   const filteredItems = inventory.filter(item => 
     item.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -59,6 +62,18 @@ export default function StoreManagerPage({
       return aValue < bValue ? 1 : -1;
     }
   });
+
+  // Pagination logic
+  const totalPages = Math.ceil(sortedItems.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentItems = sortedItems.slice(startIndex, endIndex);
+
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
 
   // Sort handler
   const handleSort = (field) => {
@@ -127,6 +142,74 @@ export default function StoreManagerPage({
     } catch (error) {
       console.error('Error updating item:', error);
       // Show error toast
+      addToast('error', 'Connection error. Please check your connection.');
+    }
+  };
+
+  // Handle request stock for out-of-stock items
+  const handleRequestStock = async (item) => {
+    try {
+      // Call onAddItem to open the request form
+      if (onAddItem) {
+        onAddItem(item);
+      }
+
+      // Send notification to HR
+      const response = await fetch('/api/notifications', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: `Low Stock Alert: ${item.brand} ${item.model} is out of stock.`,
+          type: 'stock_alert',
+          itemId: item.id,
+          itemName: `${item.brand} ${item.model}`
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        addToast('info', 'HR has been notified of the stock shortage');
+      } else {
+        addToast('warning', 'Failed to notify HR. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error notifying HR:', error);
+      addToast('error', 'Connection error. Please check your connection.');
+    }
+  };
+
+  // Handle request notification with rich data for HR
+  const handleRequestNotification = async (item) => {
+    try {
+      // Send rich notification to HR with item details
+      const response = await fetch('/api/notifications', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          itemName: item.model,
+          itemPhoto: getImageUrl(item.photo),
+          status: 'OUT OF STOCK',
+          brand: item.brand,
+          type: 'out_of_stock_alert',
+          itemId: item.id,
+          timestamp: new Date().toISOString()
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        addToast('info', `Alert sent to HR: ${item.brand} ${item.model} is out of stock`);
+      } else {
+        addToast('warning', 'Failed to send notification to HR. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error sending notification to HR:', error);
       addToast('error', 'Connection error. Please check your connection.');
     }
   };
@@ -205,7 +288,7 @@ export default function StoreManagerPage({
         <div className="header-actions">
           <button onClick={onBack} className="btn-edit-del">Logout</button>
           <button onClick={onAddItem} className="btn-request">
-            <Plus size={18} /> New Request
+            <Plus size={18} /> New Item
           </button>
           <button onClick={onViewFinished} className="btn-edit-del">
             View Finished Requests
@@ -271,61 +354,86 @@ export default function StoreManagerPage({
             </tr>
           </thead>
           <tbody>
-            {sortedItems.map((item) => (
-              <tr 
-                key={item.id} 
-                className={item.quantity === 0 ? 'row-out-of-stock' : ''}
-                style={{ transition: 'all 0.3s ease' }}
-              >
-                <td>
-                  <img src={getImageUrl(item.photo)} alt={item.model} style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '8px' }} />
-                </td>
-                <td className="model-cell">{item.model}</td>
-                <td className="brand-cell">{item.brand}</td>
-                <td>{item.category || 'General'}</td>
-                <td>{item.quantity}</td>
-                <td>
-                  <StatusBadge quantity={item.quantity} />
-                </td>
-                <td>
-                  <div className="action-btns">
-                    {item.quantity > 0 ? (
-                      <>
-                        <button 
-                          className="btn-edit-del" 
-                          onClick={() => handleEditClick(item)}
-                          title="Edit item"
-                          style={{ transition: 'all 0.2s ease' }}
-                        >
-                          <Edit2 size={14}/>
-                        </button>
-                        <button 
-                          className="btn-edit-del" 
-                          onClick={() => handleDeleteClick(item)}
-                          title="Delete item"
-                          style={{ transition: 'all 0.2s ease' }}
-                        >
-                          <Trash2 size={14}/>
-                        </button>
-                      </>
-                    ) : (
-                      <button className="btn-request" style={{ transition: 'all 0.2s ease' }}><Send size={14}/> Request</button>
-                    )}
-                  </div>
+            {currentItems.length > 0 ? (
+              currentItems.map((item) => (
+                <tr 
+                  key={item.id} 
+                  className={item.quantity === 0 ? 'row-out-of-stock' : ''}
+                  style={{ transition: 'all 0.3s ease' }}
+                >
+                  <td>
+                    <img src={getImageUrl(item.photo)} alt={item.model} style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '8px' }} />
+                  </td>
+                  <td className="model-cell">{item.model}</td>
+                  <td className="brand-cell">{item.brand}</td>
+                  <td>{item.category || 'General'}</td>
+                  <td>{item.quantity}</td>
+                  <td>
+                    <StatusBadge quantity={item.quantity} />
+                  </td>
+                  <td>
+                    <div className="action-btns">
+                      <button 
+                        className="btn-edit-del" 
+                        onClick={() => handleEditClick(item)}
+                        title="Edit item"
+                        style={{ transition: 'all 0.2s ease' }}
+                      >
+                        <Edit2 size={14}/>
+                      </button>
+                      <button 
+                        className="btn-edit-del" 
+                        onClick={() => handleDeleteClick(item)}
+                        title="Delete item"
+                        style={{ transition: 'all 0.2s ease' }}
+                      >
+                        <Trash2 size={14}/>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="7" style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+                  No items found
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>
 
       {/* Pagination */}
-      <div className="pagination">
-        <button className="page-link">Previous</button>
-        <button className="page-link active">1</button>
-        <button className="page-link">2</button>
-        <button className="page-link">Next</button>
-      </div>
+      {totalPages > 1 && (
+        <div className="pagination-controls">
+          <button 
+            className="page-btn"
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+          >
+            ‹ Prev
+          </button>
+          <div className="page-numbers">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+              <button
+                key={pageNum}
+                className={`page-number ${currentPage === pageNum ? 'active' : ''}`}
+                onClick={() => handlePageChange(pageNum)}
+              >
+                {pageNum}
+              </button>
+            ))}
+          </div>
+          <button 
+            className="page-btn"
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+          >
+            Next ›
+          </button>
+        </div>
+      )}
 
       {/* Approved Requests Section */}
       {approvedRequests && approvedRequests.length > 0 && (
@@ -354,7 +462,7 @@ export default function StoreManagerPage({
                     <td>{request.itemName}</td>
                     <td>{request.purpose || 'N/A'}</td>
                     <td>{request.quantity}</td>
-                    <td>{request.dateRequested}</td>
+                    <td>{request.dateAdded || 'N/A'}</td>
                     <td>{request.dateApproved || 'N/A'}</td>
                     <td>
                       <span className="status-badge badge-in">
@@ -383,53 +491,62 @@ export default function StoreManagerPage({
         </div>
       )}
 
-      {/* Edit Modal */}
+      {/* Enhanced Edit Modal */}
       {editingItem && (
         <div className="modal-overlay">
           <div className="modal-content">
-            <h3>Edit Item</h3>
+            <div className="modal-header">
+              <div className="modal-icon">✏️</div>
+              <h3>Edit Item Details</h3>
+              <p className="modal-subtitle">Update information for "{editingItem.model}" by {editingItem.brand}</p>
+            </div>
             <form onSubmit={handleEditSubmit}>
-              <div className="form-group">
-                <label>Model</label>
-                <input
-                  type="text"
-                  value={editForm.model}
-                  onChange={(e) => setEditForm({...editForm, model: e.target.value})}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Brand</label>
-                <input
-                  type="text"
-                  value={editForm.brand}
-                  onChange={(e) => setEditForm({...editForm, brand: e.target.value})}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Category</label>
-                <input
-                  type="text"
-                  value={editForm.category}
-                  onChange={(e) => setEditForm({...editForm, category: e.target.value})}
-                />
-              </div>
-              <div className="form-group">
-                <label>Quantity</label>
-                <input
-                  type="number"
-                  value={editForm.quantity}
-                  onChange={(e) => setEditForm({...editForm, quantity: e.target.value})}
-                  required
-                  min="0"
-                />
+              <div className="form-grid">
+                <div className="form-group">
+                  <label className="form-label">Model Name</label>
+                  <input
+                    type="text"
+                    value={editForm.model}
+                    onChange={(e) => setEditForm({...editForm, model: e.target.value})}
+                    className="form-input"
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Brand</label>
+                  <input
+                    type="text"
+                    value={editForm.brand}
+                    onChange={(e) => setEditForm({...editForm, brand: e.target.value})}
+                    className="form-input"
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Category</label>
+                  <input
+                    type="text"
+                    value={editForm.category}
+                    onChange={(e) => setEditForm({...editForm, category: e.target.value})}
+                    className="form-input"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Quantity</label>
+                  <input
+                    type="number"
+                    value={editForm.quantity}
+                    onChange={(e) => setEditForm({...editForm, quantity: e.target.value})}
+                    className="form-input"
+                    required
+                    min="0"
+                  />
+                </div>
               </div>
               <div className="modal-actions">
-                <button type="submit" className="btn-request">Save Changes</button>
                 <button 
                   type="button" 
-                  className="btn-edit-del"
+                  className="cancel-btn"
                   onClick={() => {
                     setEditingItem(null);
                     setEditForm({ model: '', brand: '', category: '', quantity: '' });
@@ -437,33 +554,53 @@ export default function StoreManagerPage({
                 >
                   Cancel
                 </button>
+                <button 
+                  type="submit" 
+                  className="save-btn"
+                >
+                  Save Changes
+                </button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
+      {/* Enhanced Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="modal-overlay">
           <div className="modal-content">
-            <h3>Delete Item</h3>
-            <p>Are you sure you want to delete "{itemToDelete?.model}"?</p>
+            <div className="modal-header">
+              <div className="modal-icon">⚠️</div>
+              <h3>Delete Item</h3>
+              <p className="modal-subtitle">Are you sure you want to delete "{itemToDelete?.model}" by {itemToDelete?.brand}?</p>
+            </div>
+            <div className="delete-warning">
+              <p className="warning-text">This action cannot be undone. The item will be permanently removed from the inventory.</p>
+              <div className="item-preview">
+                <img src={getImageUrl(itemToDelete?.photo)} alt={itemToDelete?.model} className="preview-image" />
+                <div className="item-details">
+                  <span className="item-name">{itemToDelete?.model}</span>
+                  <span className="item-brand">{itemToDelete?.brand}</span>
+                  <span className="item-quantity">Quantity: {itemToDelete?.quantity}</span>
+                </div>
+              </div>
+            </div>
             <div className="modal-actions">
               <button 
-                className="btn-edit-del"
-                onClick={handleDeleteConfirm}
-              >
-                Delete
-              </button>
-              <button 
-                className="btn-request"
+                className="cancel-btn"
                 onClick={() => {
                   setShowDeleteConfirm(false);
                   setItemToDelete(null);
                 }}
               >
                 Cancel
+              </button>
+              <button 
+                className="delete-btn"
+                onClick={handleDeleteConfirm}
+              >
+                Delete Item
               </button>
             </div>
           </div>

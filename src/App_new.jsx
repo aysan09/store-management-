@@ -141,6 +141,19 @@ export default function App() {
         return;
       }
 
+      // Find the item in inventory to decrease quantity
+      const item = inventory.find(invItem => invItem.model === itemName);
+      if (!item) {
+        notifyWarning('Item not found in inventory. Please check the item name.');
+        return;
+      }
+
+      // Check if there's enough quantity in stock
+      if (item.quantity < quantity) {
+        notifyWarning(`Insufficient stock! Only ${item.quantity} ${itemName}(s) available, but ${quantity} requested.`);
+        return;
+      }
+
       // Update status in database - move from approved to finished
       const response = await fetch(`/api/requests/${request.id}/finish`, {
         method: 'PUT',
@@ -164,14 +177,44 @@ export default function App() {
       console.log('Response result:', result);
       
       if (result.success) {
-        // Update local state
-        const currentDate = new Date().toISOString().split('T')[0];
-        setRequests(prev => prev.map(req => 
-          req.id === request.id 
-            ? { ...req, status: 'Finished', dateFinished: currentDate }
-            : req
-        ));
-        notifySuccess('Request marked as finished successfully!');
+        // Update item quantity in database
+        const itemResponse = await fetch(`/api/items/${item.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: item.model,
+            brand: item.brand,
+            category: item.category,
+            quantity: item.quantity - quantity
+          })
+        });
+
+        const itemResult = await itemResponse.json();
+        
+        if (itemResult.success) {
+          // Update local state
+          const currentDate = new Date().toISOString().split('T')[0];
+          
+          // Update requests state
+          setRequests(prev => prev.map(req => 
+            req.id === request.id 
+              ? { ...req, status: 'Finished', dateFinished: currentDate }
+              : req
+          ));
+          
+          // Update inventory state
+          setInventory(prev => prev.map(invItem => 
+            invItem.id === item.id 
+              ? { ...invItem, quantity: invItem.quantity - quantity }
+              : invItem
+          ));
+          
+          notifySuccess(`Request marked as finished successfully! ${quantity} ${itemName}(s) have been deducted from inventory.`);
+        } else {
+          notifyError('Request marked as finished, but failed to update inventory: ' + (itemResult.message || 'Unknown error'));
+        }
       } else {
         notifyError('Error marking request as finished: ' + (result.message || 'Unknown error'));
       }
@@ -401,7 +444,7 @@ export default function App() {
     return (
       <>
         <HRRecords 
-          onBack={handleLogout} 
+          onBack={() => setView('hr-reviews')} 
           allRequests={requests}
         />
         <ToastContainer />
