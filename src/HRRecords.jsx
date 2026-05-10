@@ -29,6 +29,7 @@ export default function HRRecords({ onBack, allRequests, onGoToHRReview }) {
           <div className="hr-records-table-header">
             <div className="table-header-cell">Employee</div>
             <div className="table-header-cell">Item</div>
+            <div className="table-header-cell">Brand</div>
             <div className="table-header-cell">Quantity</div>
             <div className="table-header-cell">Date</div>
             <div className="table-header-cell">Purpose</div>
@@ -49,6 +50,9 @@ export default function HRRecords({ onBack, allRequests, onGoToHRReview }) {
                     <div className="item-name">{req.itemName}</div>
                     <div className="item-category">Category: {req.itemCategory || 'General'}</div>
                   </div>
+                </div>
+                <div className="table-cell brand-cell">
+                  <span className="brand-name">{req.itemBrand || 'N/A'}</span>
                 </div>
                 <div className="table-cell quantity-cell">
                   <span className="quantity-badge">{req.quantity}</span>

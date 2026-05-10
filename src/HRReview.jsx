@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ToastContainer } from 'react-toastify';
-import { notifySuccess, notifyError } from './utils/toastUtils';
+import { notifySuccess, notifyError, notifyWarning } from './utils/toastUtils';
+import { Menu, X as CloseIcon, Download } from 'lucide-react';
 import 'react-toastify/dist/ReactToastify.css';
 import './styles.css';
 
@@ -13,6 +14,8 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
   const [sortOrder, setSortOrder] = useState('desc');
   const [selectedRequests, setSelectedRequests] = useState(new Set());
   const [showBulkActions, setShowBulkActions] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleAction = async (employeeName, itemName, quantity, status) => {
     try {
@@ -28,6 +31,9 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
         return;
       }
 
+      setIsProcessing(true);
+      setLoading(true);
+
       let response;
       let successMessage;
 
@@ -40,7 +46,7 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
           },
           body: JSON.stringify({})
         });
-        successMessage = 'Request approved successfully!';
+        successMessage = `✅ Request approved successfully! ${itemName} has been approved for ${employeeName}.`;
       } else if (status === 'Rejected') {
         // Reject the request (delete it)
         response = await fetch(`/api/requests/${request.id}/reject`, {
@@ -49,7 +55,7 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
             'Content-Type': 'application/json',
           }
         });
-        successMessage = 'Request rejected successfully!';
+        successMessage = `❌ Request rejected successfully! ${itemName} has been rejected for ${employeeName}.`;
       } else {
         notifyError('Invalid status');
         return;
@@ -58,27 +64,64 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
       const result = await response.json();
       
       if (result.success) {
-        // Update local state - remove approved/rejected requests from pending list
-        setRequests(prev => prev.filter(req => 
-          req.id !== request.id
-        ));
+        // Remove the approved/rejected request from the current list
+        setRequests(prevRequests => Array.isArray(prevRequests) ? prevRequests.filter(req => req.id !== request.id) : []);
+        // Also remove from filtered requests
+        setSelectedRequests(new Set());
         
         notifySuccess(successMessage);
+        
+        // Send notification to store manager if request was approved
+        if (status === 'Approved') {
+          try {
+            const notificationResponse = await fetch('/api/notifications', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                message: `✅ HR Approval: ${itemName} has been approved for ${employeeName}. Please prepare the item for pickup.`,
+                type: 'hr_approval',
+                itemId: request.id,
+                itemName: itemName,
+                employeeName: employeeName
+              })
+            });
+            
+            const notificationResult = await notificationResponse.json();
+            if (notificationResult.success) {
+              console.log('Notification sent to store manager successfully');
+            } else {
+              console.warn('Failed to send notification to store manager:', notificationResult.message);
+            }
+          } catch (notificationError) {
+            console.warn('Error sending notification to store manager:', notificationError);
+          }
+        }
+        
+        // Auto-refresh the view after successful action
+        setTimeout(() => {
+          // Refresh can be handled by the parent component if needed
+        }, 1000);
       } else {
         notifyError('Error updating request: ' + result.message);
       }
     } catch (error) {
       console.error('Error updating request:', error);
-      notifyError('Error updating request. Please try again.');
+      notifyError('Error updating request. Please check your connection and try again.');
+    } finally {
+      setIsProcessing(false);
+      setLoading(false);
     }
   };
 
   // Filter and sort pending requests
-  const pendingOnly = pendingRequests.filter(req => req.status === 'Pending');
+  const pendingOnly = Array.isArray(pendingRequests) ? pendingRequests.filter(req => req.status === 'Pending') : [];
   
   const filteredRequests = pendingOnly.filter(req =>
     req.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     req.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (req.itemBrand && req.itemBrand.toLowerCase().includes(searchTerm.toLowerCase())) ||
     req.purpose.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -93,6 +136,10 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
       case 'item':
         aValue = a.itemName.toLowerCase();
         bValue = b.itemName.toLowerCase();
+        break;
+      case 'brand':
+        aValue = (a.itemBrand || '').toLowerCase();
+        bValue = (b.itemBrand || '').toLowerCase();
         break;
       case 'date':
         aValue = new Date(a.dateAdded || a.dateRequested || 0);
@@ -197,6 +244,34 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
     setSelectedRequest(null);
   };
 
+  // Handle export requests to Excel
+  const handleExportRequests = async () => {
+    try {
+      notifySuccess('Exporting requests to Excel...');
+      const response = await fetch('/api/requests/export');
+      
+      if (!response.ok) {
+        throw new Error('Export failed');
+      }
+      
+      // Create blob from response and download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `requests_export_${new Date().toISOString().split('T')[0]}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      notifySuccess('Requests exported successfully!');
+    } catch (error) {
+      console.error('Error exporting requests:', error);
+      notifyError('Failed to export requests');
+    }
+  };
+
   return (
     <>
       <div className="status-page">
@@ -215,19 +290,68 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
               </div>
             </div>
           </div>
-          <div className="hr-actions-bar">
-            <button className="records-btn" onClick={onViewRecords}>Records</button>
-            <button className="records-btn" style={{backgroundColor: '#3b82f6'}} onClick={() => {
+          {/* Desktop Actions Bar */}
+          <div className="hr-actions-bar desktop-actions-bar">
+            <button className="header-action-btn records-btn" onClick={onViewRecords}>
+              <span className="btn-icon">📋</span>
+              <span className="btn-text">Records</span>
+            </button>
+            <button className="header-action-btn employee-mgmt-btn" onClick={() => {
               if (onEmployeeManagement) {
                 onEmployeeManagement();
               }
-            }}>Employee Management</button>
-            <button className="records-btn" style={{backgroundColor: '#10b981'}} onClick={() => {
+            }}>
+              <span className="btn-icon">👥</span>
+              <span className="btn-text">Employee Management</span>
+            </button>
+            <button className="header-action-btn register-btn" onClick={() => {
               if (onRegisterEmployee) {
                 onRegisterEmployee();
               }
-            }}>Register Employee</button>
+            }}>
+              <span className="btn-icon">➕</span>
+              <span className="btn-text">Register Employee</span>
+            </button>
+            <button className="header-action-btn export-btn" onClick={handleExportRequests}>
+              <span className="btn-icon"><Download size={16} /></span>
+              <span className="btn-text">Export Requests</span>
+            </button>
           </div>
+
+          {/* Mobile Hamburger Button */}
+          <button className="mobile-hamburger-btn" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+            {isMobileMenuOpen ? <CloseIcon size={24} /> : <Menu size={24} />}
+          </button>
+
+          {/* Mobile Menu Dropdown */}
+          {isMobileMenuOpen && (
+            <div className="mobile-menu-dropdown hr-mobile-menu">
+              <div className="mobile-menu-header">
+                <span>Menu</span>
+                <button onClick={() => setIsMobileMenuOpen(false)} aria-label="Close menu">
+                  <CloseIcon size={20} />
+                </button>
+              </div>
+              <div className="mobile-menu-items">
+                <button onClick={() => { onViewRecords(); setIsMobileMenuOpen(false); }} className="mobile-menu-item">
+                  <span className="mobile-menu-icon">📋</span>
+                  Records
+                </button>
+                <button onClick={() => { if (onEmployeeManagement) onEmployeeManagement(); setIsMobileMenuOpen(false); }} className="mobile-menu-item">
+                  <span className="mobile-menu-icon">👥</span>
+                  Employee Management
+                </button>
+                <button onClick={() => { if (onRegisterEmployee) onRegisterEmployee(); setIsMobileMenuOpen(false); }} className="mobile-menu-item">
+                  <span className="mobile-menu-icon">➕</span>
+                  Register Employee
+                </button>
+                <button onClick={() => { handleExportRequests(); setIsMobileMenuOpen(false); }} className="mobile-menu-item">
+                  <span className="mobile-menu-icon">📥</span>
+                  Export Requests
+                </button>
+              </div>
+            </div>
+          )}
         </header>
         
         <div className="status-container">
@@ -236,7 +360,7 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
             <div className="search-box">
               <input
                 type="text"
-                placeholder="Search by employee, item, or purpose..."
+                placeholder="Search by employee, item, brand, or purpose..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="search-input"
@@ -256,6 +380,12 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
                 onClick={() => handleSort('item')}
               >
                 Item {sortBy === 'item' && (sortOrder === 'asc' ? '↑' : '↓')}
+              </button>
+              <button 
+                className={`sort-btn ${sortBy === 'brand' ? 'active' : ''}`}
+                onClick={() => handleSort('brand')}
+              >
+                Brand {sortBy === 'brand' && (sortOrder === 'asc' ? '↑' : '↓')}
               </button>
               <button 
                 className={`sort-btn ${sortBy === 'date' ? 'active' : ''}`}
@@ -302,29 +432,32 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
 
           {/* Table Header */}
           <div className="hr-table-header">
-            <div className="table-header-cell checkbox-cell">
-              <input
-                type="checkbox"
-                checked={selectedRequests.size === sortedRequests.length && sortedRequests.length > 0}
-                onChange={handleSelectAll}
-                className="select-all-checkbox"
-              />
+              <div className="table-header-cell checkbox-cell">
+                <input
+                  type="checkbox"
+                  checked={selectedRequests.size === sortedRequests.length && sortedRequests.length > 0}
+                  onChange={handleSelectAll}
+                  className="select-all-checkbox"
+                />
+              </div>
+              <div className="table-header-cell" onClick={() => handleSort('employee')}>
+                Employee {sortBy === 'employee' && (sortOrder === 'asc' ? '↑' : '↓')}
+              </div>
+              <div className="table-header-cell" onClick={() => handleSort('item')}>
+                Item {sortBy === 'item' && (sortOrder === 'asc' ? '↑' : '↓')}
+              </div>
+              <div className="table-header-cell" onClick={() => handleSort('brand')}>
+                Brand {sortBy === 'brand' && (sortOrder === 'asc' ? '↑' : '↓')}
+              </div>
+              <div className="table-header-cell" onClick={() => handleSort('quantity')}>
+                Qty {sortBy === 'quantity' && (sortOrder === 'asc' ? '↑' : '↓')}
+              </div>
+              <div className="table-header-cell" onClick={() => handleSort('date')}>
+                Date {sortBy === 'date' && (sortOrder === 'asc' ? '↑' : '↓')}
+              </div>
+              <div className="table-header-cell">Purpose</div>
+              <div className="table-header-cell">Action</div>
             </div>
-            <div className="table-header-cell" onClick={() => handleSort('employee')}>
-              Employee {sortBy === 'employee' && (sortOrder === 'asc' ? '↑' : '↓')}
-            </div>
-            <div className="table-header-cell" onClick={() => handleSort('item')}>
-              Item {sortBy === 'item' && (sortOrder === 'asc' ? '↑' : '↓')}
-            </div>
-            <div className="table-header-cell" onClick={() => handleSort('quantity')}>
-              Qty {sortBy === 'quantity' && (sortOrder === 'asc' ? '↑' : '↓')}
-            </div>
-            <div className="table-header-cell" onClick={() => handleSort('date')}>
-              Date {sortBy === 'date' && (sortOrder === 'asc' ? '↑' : '↓')}
-            </div>
-            <div className="table-header-cell">Purpose</div>
-            <div className="table-header-cell">Action</div>
-          </div>
 
           {/* Table Content */}
           {sortedRequests.length > 0 ? (
@@ -347,8 +480,10 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
                 <div className="table-cell item-cell">
                   <div className="item-info">
                     <div className="item-name">{req.itemName}</div>
-                    <div className="item-category">{req.category || 'General'}</div>
                   </div>
+                </div>
+                <div className="table-cell brand-cell">
+                  {req.itemBrand || 'N/A'}
                 </div>
                 <div className="table-cell quantity-cell">
                   <span className={`quantity-badge ${req.isOutOfStockNotification ? 'out-of-stock-badge' : ''}`}>

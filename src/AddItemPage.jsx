@@ -39,7 +39,7 @@ export default function AddItemPage({ onBack, onSave, onViewRequests }) {
         if (result.success) {
           // Add to local state with the server-generated ID
           const photoUrl = result.data.photo 
-            ? `/uploads${result.data.photo}`
+            ? result.data.photo
             : "https://via.placeholder.com/150";
           
           onSave({
@@ -73,14 +73,7 @@ export default function AddItemPage({ onBack, onSave, onViewRequests }) {
               <h1 className="add-item-title">Add New Item</h1>
               <p className="add-item-subtitle">Fill in the details below to add a new item to the store</p>
             </div>
-            <button 
-              className="records-btn" 
-              onClick={() => {
-                if (onViewRequests) onViewRequests();
-              }}
-            >
-              View Requests
-            </button>
+           
           </div>
           
           <div className="add-item-form-section">

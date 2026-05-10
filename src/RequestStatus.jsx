@@ -18,7 +18,7 @@ export default function RequestStatus({ onBack, requests: propsRequests }) {
           throw new Error('Failed to fetch requests');
         }
         const data = await response.json();
-        setRequests(data);
+        setRequests(data.data ? data.data.requests : []);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -37,6 +37,7 @@ export default function RequestStatus({ onBack, requests: propsRequests }) {
     .filter(req => 
       req.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       req.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (req.itemBrand && req.itemBrand.toLowerCase().includes(searchTerm.toLowerCase())) ||
       req.status.toLowerCase().includes(searchTerm.toLowerCase())
     )
     .sort((a, b) => {
@@ -50,6 +51,10 @@ export default function RequestStatus({ onBack, requests: propsRequests }) {
         case 'item':
           aVal = a.itemName.toLowerCase();
           bVal = b.itemName.toLowerCase();
+          break;
+        case 'brand':
+          aVal = (a.itemBrand || '').toLowerCase();
+          bVal = (b.itemBrand || '').toLowerCase();
           break;
         case 'quantity':
           aVal = a.quantity;
@@ -189,6 +194,15 @@ export default function RequestStatus({ onBack, requests: propsRequests }) {
               </div>
               <div 
                 className="table-header-cell"
+                onClick={() => handleSort('brand')}
+              >
+                Brand
+                {sortBy === 'brand' && (
+                  <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                )}
+              </div>
+              <div 
+                className="table-header-cell"
                 onClick={() => handleSort('quantity')}
               >
                 Quantity
@@ -196,6 +210,7 @@ export default function RequestStatus({ onBack, requests: propsRequests }) {
                   <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>
                 )}
               </div>
+               <div>Purpose</div>
               <div 
                 className="table-header-cell"
                 onClick={() => handleSort('date')}
@@ -214,7 +229,7 @@ export default function RequestStatus({ onBack, requests: propsRequests }) {
                   <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>
                 )}
               </div>
-              <div>Purpose</div>
+             
             </div>
 
             {filteredRequests.map((req, index) => (
@@ -222,38 +237,38 @@ export default function RequestStatus({ onBack, requests: propsRequests }) {
                 <div className="employee-cell">
                   <div className="employee-info">
                     <div className="employee-name">{req.employeeName}</div>
-                    <div className="employee-id">ID: {req.employeeId || 'N/A'}</div>
+         
                   </div>
                 </div>
                 <div className="item-cell">
-                  <div className="item-info">
-                    <div className="item-name">{req.itemName}</div>
-                    <div className="item-category">{req.itemCategory || 'General'}</div>
-                  </div>
+                  <div className="item-name">{req.itemName}</div>
+                </div>
+                <div className="brand-cell">
+                  <div className="item-brand">{req.itemBrand }</div>
                 </div>
                 <div className="quantity-cell">
                   <span className="quantity-badge">{req.quantity}</span>
+                </div>
+                 <div className="purpose-cell">
+                  <div className="purpose-content" title={req.purpose}>
+                    {req.purpose}
+                  </div>
                 </div>
                 <div className="date-cell">
                   <div className="date-info">
                     <div className="date-added">
                       {req.dateAdded ? new Date(req.dateAdded).toLocaleDateString() : 'N/A'}
                     </div>
-                    <div className="date-time">
-                      {req.dateAdded ? new Date(req.dateAdded).toLocaleTimeString() : ''}
-                    </div>
+                    
                   </div>
                 </div>
+                
                 <div className="status-cell">
                   <span className={`status-badge ${getStatusClass(req.status)}`}>
                     {getStatusIcon(req.status)} {req.status}
                   </span>
                 </div>
-                <div className="purpose-cell">
-                  <div className="purpose-content" title={req.purpose}>
-                    {req.purpose}
-                  </div>
-                </div>
+               
               </div>
             ))}
           </div>

@@ -125,6 +125,13 @@
   transform: translateY(-1px);
 }
 
+/* Hide icon when input is focused */
+.input-wrapper:focus-within .input-icon {
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
 .form-input::placeholder {
   color: #9ca3af;
   font-weight: 500;

@@ -3,11 +3,12 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { db } = require('../config/db');
+const ExcelJS = require('exceljs');
 
 const router = express.Router();
 
 // Ensure uploads directory exists
-const uploadsDir = path.join(process.cwd(), 'uploads');
+const uploadsDir = path.join(__dirname, '../uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
@@ -31,6 +32,82 @@ const upload = multer({
     } else {
       cb(new Error('Only image files are allowed!'), false);
     }
+  }
+});
+
+// @route   GET /api/items/export
+// @desc    Export items to Excel file
+// @access  Public
+router.get('/export', async (req, res) => {
+  try {
+    // Get all items (no pagination for export)
+    const [rows] = await db.execute(
+      'SELECT * FROM items ORDER BY date_added DESC'
+    );
+
+    // Create a new workbook
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Items');
+
+    // Define columns
+    worksheet.columns = [
+      { header: 'ID', key: 'id', width: 10 },
+      { header: 'Model', key: 'model', width: 20 },
+      { header: 'Brand', key: 'brand', width: 15 },
+      { header: 'Category', key: 'category', width: 15 },
+      { header: 'Quantity', key: 'quantity', width: 10 },
+      { header: 'Photo', key: 'photo', width: 25 },
+      { header: 'Date Added', key: 'date_added', width: 20 },
+      { header: 'Updated At', key: 'updated_at', width: 20 }
+    ];
+
+    // Add data rows
+    rows.forEach(row => {
+      worksheet.addRow({
+        id: row.id,
+        model: row.model,
+        brand: row.brand,
+        category: row.category,
+        quantity: row.quantity,
+        photo: row.photo || '',
+        date_added: row.date_added ? new Date(row.date_added).toLocaleString() : '',
+        updated_at: row.updated_at ? new Date(row.updated_at).toLocaleString() : ''
+      });
+    });
+
+    // Style the header row
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFFF4E6' }
+    };
+    worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+
+    // Set content type and headers for file download
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="items_export_${new Date().toISOString().split('T')[0]}.xlsx"`
+    );
+
+    // Write workbook to response
+    await workbook.xlsx.write(res);
+    res.end();
+
+  } catch (error) {
+    console.error('Export items error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        message: 'Failed to export items',
+        code: 'EXPORT_ITEMS_ERROR',
+        statusCode: 500
+      }
+    });
   }
 });
 

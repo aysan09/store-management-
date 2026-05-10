@@ -12,6 +12,7 @@
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
+    "express-validator": "^7.3.1",
     "lucide-react": "^0.575.0",
     "mysql": "^2.18.1",
     "mysql2": "^3.18.2",
@@ -19,7 +20,10 @@
     "nodemailer": "^8.0.3",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "react-toastify": "^11.0.5"
+    "react-router-dom": "^7.13.2",
+    "react-toastify": "^11.0.5",
+    "rollup-plugin-visualizer": "^7.0.1",
+    "terser": "^5.46.1"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.0.0",

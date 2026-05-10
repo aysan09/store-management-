@@ -1,6 +1,28 @@
 /* Custom Toast Styles */
 .Toastify__toast-container {
   z-index: 9999;
+  position: fixed !important;
+  top: 20px !important;
+  right: 20px !important;
+  left: auto !important;
+  bottom: auto !important;
+  max-width: 400px;
+  width: 100%;
+  pointer-events: none;
+}
+
+.Toastify__toast-container > * {
+  pointer-events: auto;
+}
+
+/* Make toasts scroll with the page on mobile */
+@media (max-width: 768px) {
+  .Toastify__toast-container {
+    top: 10px !important;
+    right: 10px !important;
+    left: 10px !important;
+    max-width: none;
+  }
 }
 
 .Toastify__toast {

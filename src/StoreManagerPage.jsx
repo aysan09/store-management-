@@ -1,30 +1,72 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { getImageUrl } from "./config";
 import { 
   Search, Package, CheckCircle, AlertTriangle, 
   XCircle, Edit2, Trash2, Send, Plus,
   X as CloseIcon, CheckCircle as SuccessIcon,
-  XCircle as ErrorIcon, AlertTriangle as WarningIcon
+  XCircle as ErrorIcon, AlertTriangle as WarningIcon,
+  Bell, Mail, Eye, Trash2 as TrashIcon, Menu, Download
 } from 'lucide-react';
 import './styles/store-manager-styles.css';
 import './styles/enhanced-modals-styles.css';
+import './styles/enhanced-store-manager-styles.css';
 
 export default function StoreManagerPage({ 
   onBack, inventory, setInventory, onAddItem, approvedRequests, onMarkFinished, onViewFinished 
 }) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [editForm, setEditForm] = useState({ model: '', brand: '', category: '', quantity: '' });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
   const [showMessage, setShowMessage] = useState(false);
   const [messageContent, setMessageContent] = useState({ type: '', title: '', message: '', showRetry: false });
+  const [showFinishConfirm, setShowFinishConfirm] = useState(false);
+  const [itemToFinish, setItemToFinish] = useState(null);
+  const [isFinishing, setIsFinishing] = useState(false);
   const [toasts, setToasts] = useState([]);
   const [sortBy, setSortBy] = useState('model');
   const [sortOrder, setSortOrder] = useState('asc');
   const [selectedItems, setSelectedItems] = useState(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(5);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [notificationSent, setNotificationSent] = useState(new Set());
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notificationInterval, setNotificationInterval] = useState(null);
+  const [approvedRequestsState, setApprovedRequestsState] = useState(approvedRequests || []);
+  const [approvedRequestsLoading, setApprovedRequestsLoading] = useState(false);
+
+  // Function to refresh inventory data from server
+  const refreshInventory = async () => {
+    try {
+      const response = await fetch('/api/items');
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          // Handle different possible API response structures
+          let itemsArray = [];
+          
+          if (result.data && Array.isArray(result.data)) {
+            itemsArray = result.data;
+          } else if (result.data && result.data.items && Array.isArray(result.data.items)) {
+            itemsArray = result.data.items;
+          } else if (Array.isArray(result)) {
+            itemsArray = result;
+          }
+          
+          if (itemsArray.length > 0) {
+            setInventory(itemsArray);
+            addToast('info', 'Inventory data refreshed from server');
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error refreshing inventory:', error);
+    }
+  };
 
   const filteredItems = inventory.filter(item => 
     item.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -254,6 +296,145 @@ export default function StoreManagerPage({
     setToasts(prev => prev.filter(toast => toast.id !== id));
   };
 
+  // Fetch notifications from server
+  const fetchNotifications = async () => {
+    try {
+      const response = await fetch('/api/notifications');
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setNotifications(result.data || []);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+  };
+
+  // Enhanced fetch for approved requests
+  const fetchApprovedRequests = async () => {
+    try {
+      setApprovedRequestsLoading(true);
+      const response = await fetch('/api/requests');
+      const result = await response.json();
+      
+      console.log('API Response:', result); // Debug log
+      
+      if (result.success) {
+        // Filter for approved requests only (case-insensitive)
+        const approved = result.data.requests.filter(req => req.status.toLowerCase() === 'approved');
+        
+        console.log('Approved requests from API:', approved); // Debug log
+        
+        // Transform data to match frontend format
+        const transformedRequests = approved.map(req => ({
+          employeeName: req.employeeName,
+          itemName: req.itemName,
+          itemBrand: req.itemBrand || 'N/A', // Ensure brand is included
+          quantity: req.quantity,
+          purpose: req.purpose,
+          dateAdded: req.dateAdded,
+          dateApproved: req.dateApproved,
+          id: req.id
+        }));
+        
+        console.log('Transformed requests:', transformedRequests); // Debug log
+        
+        setApprovedRequestsState(transformedRequests);
+      }
+    } catch (error) {
+      console.error('Error fetching approved requests:', error);
+      addToast('error', 'Failed to fetch approved requests');
+    } finally {
+      setApprovedRequestsLoading(false);
+    }
+  };
+
+  // Start polling for notifications
+  useEffect(() => {
+    // Fetch notifications immediately
+    fetchNotifications();
+
+    // Set up interval to fetch notifications every 30 seconds
+    const interval = setInterval(fetchNotifications, 30000);
+    setNotificationInterval(interval);
+
+    // Fetch approved requests immediately
+    fetchApprovedRequests();
+
+    // Set up interval to fetch approved requests every 30 seconds
+    const approvedInterval = setInterval(fetchApprovedRequests, 30000);
+
+    return () => {
+      if (interval) clearInterval(interval);
+      if (approvedInterval) clearInterval(approvedInterval);
+    };
+  }, []);
+
+  // Handle notification actions
+  const handleMarkAsRead = async (notificationId) => {
+    try {
+      await fetch(`/api/notifications/${notificationId}/read`, {
+        method: 'PUT'
+      });
+      setNotifications(prev => prev.map(n => 
+        n.id === notificationId ? { ...n, read: true } : n
+      ));
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
+  };
+
+  const handleDeleteNotification = async (notificationId) => {
+    try {
+      await fetch(`/api/notifications/${notificationId}`, {
+        method: 'DELETE'
+      });
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+    }
+  };
+
+  const handleClearAllNotifications = async () => {
+    try {
+      await fetch('/api/notifications/clear', {
+        method: 'DELETE'
+      });
+      setNotifications([]);
+    } catch (error) {
+      console.error('Error clearing notifications:', error);
+    }
+  };
+
+  // Handle export items to Excel
+  const handleExportItems = async () => {
+    try {
+      addToast('info', 'Exporting items to Excel...');
+      const response = await fetch('/api/items/export');
+      
+      if (!response.ok) {
+        throw new Error('Export failed');
+      }
+      
+      // Create blob from response and download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `items_export_${new Date().toISOString().split('T')[0]}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      addToast('success', 'Items exported successfully!');
+    } catch (error) {
+      console.error('Error exporting items:', error);
+      addToast('error', 'Failed to export items');
+    }
+  };
+
   // Handle message popup actions
   const handleMessageAction = (action) => {
     setShowMessage(false);
@@ -285,7 +466,17 @@ export default function StoreManagerPage({
           <h1><span className="title-icon">📦</span> Store Inventory Management</h1>
           <p className="subtitle">Manage and track all inventory items</p>
         </div>
-        <div className="header-actions">
+        
+        {/* Desktop Header Actions */}
+        <div className="header-actions desktop-header-actions">
+          <div className="notification-bell" onClick={() => setShowNotifications(!showNotifications)}>
+            <Bell size={24} />
+            {notifications.filter(n => !n.read).length > 0 && (
+              <span className="notification-badge">
+                {notifications.filter(n => !n.read).length}
+              </span>
+            )}
+          </div>
           <button onClick={onBack} className="btn-edit-del">Logout</button>
           <button onClick={onAddItem} className="btn-request">
             <Plus size={18} /> New Item
@@ -293,8 +484,134 @@ export default function StoreManagerPage({
           <button onClick={onViewFinished} className="btn-edit-del">
             View Finished Requests
           </button>
+          <button onClick={refreshInventory} className="btn-request">
+            Refresh Data
+          </button>
+          <button onClick={handleExportItems} className="btn-request" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Download size={18} /> Export Items
+          </button>
         </div>
+
+        {/* Mobile Header Actions */}
+        <div className="mobile-header-actions">
+          <div className="mobile-header-left">
+            <div className="notification-bell" onClick={() => setShowNotifications(!showNotifications)}>
+              <Bell size={24} />
+              {notifications.filter(n => !n.read).length > 0 && (
+                <span className="notification-badge">
+                  {notifications.filter(n => !n.read).length}
+                </span>
+              )}
+            </div>
+          </div>
+          <button 
+            className="hamburger-btn" 
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label="Toggle menu"
+          >
+            <Menu size={24} />
+          </button>
+        </div>
+
+        {/* Mobile Menu Dropdown */}
+        {isMobileMenuOpen && (
+          <div className="mobile-menu-dropdown">
+            <div className="mobile-menu-header">
+              <span>Menu</span>
+              <button 
+                className="mobile-menu-close" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                aria-label="Close menu"
+              >
+                <CloseIcon size={20} />
+              </button>
+            </div>
+            <div className="mobile-menu-items">
+              <button onClick={() => { onBack(); setIsMobileMenuOpen(false); }} className="mobile-menu-item">
+                <span className="mobile-menu-icon">🚪</span>
+                Logout
+              </button>
+              <button onClick={() => { onAddItem(); setIsMobileMenuOpen(false); }} className="mobile-menu-item">
+                <span className="mobile-menu-icon">➕</span>
+                New Item
+              </button>
+              <button onClick={() => { onViewFinished(); setIsMobileMenuOpen(false); }} className="mobile-menu-item">
+                <span className="mobile-menu-icon">📋</span>
+                View Finished Requests
+              </button>
+              <button onClick={() => { refreshInventory(); setIsMobileMenuOpen(false); }} className="mobile-menu-item">
+                <span className="mobile-menu-icon">🔄</span>
+                Refresh Data
+              </button>
+              <button onClick={() => { handleExportItems(); setIsMobileMenuOpen(false); }} className="mobile-menu-item">
+                <span className="mobile-menu-icon">📥</span>
+                Export Items
+              </button>
+            </div>
+          </div>
+        )}
       </header>
+
+      {/* Notifications Dropdown */}
+      {showNotifications && (
+        <div className="notifications-dropdown top-position">
+          <div className="notifications-header">
+            <h3>Notifications</h3>
+            <div className="notifications-header-actions">
+              {notifications.length > 0 && (
+                <button onClick={handleClearAllNotifications} className="clear-all-btn">
+                  Clear All
+                </button>
+              )}
+              <button onClick={() => setShowNotifications(false)} className="close-notifications-btn" aria-label="Close notifications">
+                <CloseIcon size={18} />
+              </button>
+            </div>
+          </div>
+          <div className="notifications-list">
+            {notifications.length === 0 ? (
+              <div className="no-notifications">
+                <Mail size={48} className="no-notifications-icon" />
+                <p>No notifications</p>
+              </div>
+            ) : (
+              notifications.map(notification => (
+                <div key={notification.id} className={`notification-item ${notification.read ? 'read' : 'unread'}`}>
+                  <div className="notification-content">
+                    <div className="notification-message">{notification.message}</div>
+                    <div className="notification-meta">
+                      <span className="notification-time">
+                        {new Date(notification.timestamp).toLocaleString()}
+                      </span>
+                      {notification.itemName && (
+                        <span className="notification-item-name">Item: {notification.itemName}</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="notification-actions">
+                    {!notification.read && (
+                      <button 
+                        onClick={() => handleMarkAsRead(notification.id)}
+                        className="mark-read-btn"
+                        title="Mark as read"
+                      >
+                        <Eye size={16} />
+                      </button>
+                    )}
+                    <button 
+                      onClick={() => handleDeleteNotification(notification.id)}
+                      className="delete-notification-btn"
+                      title="Delete notification"
+                    >
+                      <TrashIcon size={16} />
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Summary Cards */}
       <section className="stats-grid">
@@ -302,7 +619,7 @@ export default function StoreManagerPage({
         <StatCard 
           icon={<CheckCircle />} 
           label="In Stock" 
-          value={inventory.filter(item => item.quantity > 0).length} 
+          value={inventory.filter(item => item.quantity > 5).length} 
           type="in-stock" 
         />
         <StatCard 
@@ -436,34 +753,51 @@ export default function StoreManagerPage({
       )}
 
       {/* Approved Requests Section */}
-      {approvedRequests && approvedRequests.length > 0 && (
-        <div className="approved-requests-section">
+      <div className="approved-requests-section">
+        <div className="approved-requests-header">
           <h2 style={{ margin: '30px 0 15px 0', fontSize: '20px', color: '#1e293b' }}>
             Approved Requests
           </h2>
+          <div className="approved-requests-actions">
+            <button 
+              className="btn-request"
+              onClick={fetchApprovedRequests}
+              disabled={approvedRequestsLoading}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+            >
+              {approvedRequestsLoading ? 'Refreshing...' : 'Refresh Requests'}
+            </button>
+            <span className="approved-count">
+              {approvedRequestsState.length} approved request{approvedRequestsState.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+        </div>
+        {approvedRequestsState && approvedRequestsState.length > 0 ? (
           <div className="approved-requests-table-container">
             <table className="main-table">
               <thead>
-                <tr>
-                  <th>Employee</th>
-                  <th>Item</th>
-                  <th>Purpose</th>
-                  <th>Quantity</th>
-                  <th>Requested Date</th>
-                  <th>Approved Date</th>
-                  <th>Status</th>
-                  <th className="text-center">Actions</th>
-                </tr>
+              <tr>
+                <th>Employee</th>
+                <th>Item</th>
+                <th>Brand</th>
+                <th>Purpose</th>
+                <th>Quantity</th>
+                <th>Requested Date</th>
+                <th>Approved Date</th>
+                <th>Status</th>
+                <th className="text-center">Actions</th>
+              </tr>
               </thead>
               <tbody>
-                {approvedRequests.map((request, index) => (
-                  <tr key={index}>
-                    <td>{request.employeeName}</td>
-                    <td>{request.itemName}</td>
-                    <td>{request.purpose || 'N/A'}</td>
-                    <td>{request.quantity}</td>
-                    <td>{request.dateAdded || 'N/A'}</td>
-                    <td>{request.dateApproved || 'N/A'}</td>
+                {approvedRequestsState.map((request, index) => (
+                <tr key={request.id || index}>
+                    <td>{request.employeeName || 'Unknown Employee'}</td>
+                    <td>{request.itemName || 'Unknown Item'}</td>
+                    <td>{request.itemBrand || 'No Brand'}</td>
+                    <td>{request.purpose || 'No Purpose Specified'}</td>
+                    <td>{request.quantity || 0}</td>
+                    <td>{request.dateAdded ? new Date(request.dateAdded).toLocaleDateString() : 'No Date'}</td>
+                    <td>{request.dateApproved ? new Date(request.dateApproved).toLocaleDateString() : 'Not Approved'}</td>
                     <td>
                       <span className="status-badge badge-in">
                         ✅ Approved
@@ -473,9 +807,65 @@ export default function StoreManagerPage({
                       <div className="action-btns">
                         <button 
                           className="btn-request"
-                          onClick={() => {
-                            if (onMarkFinished) {
-                              onMarkFinished(request.employeeName, request.itemName, request.quantity);
+                          onClick={async () => {
+                            try {
+                              // First, fetch all items from the server to get the most current data
+                              const itemsResponse = await fetch('/api/items');
+                              if (!itemsResponse.ok) {
+                                addToast('error', 'Failed to fetch inventory data');
+                                return;
+                              }
+                              
+                              const itemsResult = await itemsResponse.json();
+                              console.log('Items API Response:', itemsResult); // Debug log
+                              
+                              if (!itemsResult.success) {
+                                addToast('error', 'Failed to fetch inventory data');
+                                return;
+                              }
+                              
+                              // Handle different possible API response structures
+                              let itemsArray = [];
+                              
+                              // Try different possible structures
+                              if (itemsResult.data && Array.isArray(itemsResult.data)) {
+                                // Structure: {success: true, data: [...]}
+                                itemsArray = itemsResult.data;
+                              } else if (itemsResult.data && itemsResult.data.items && Array.isArray(itemsResult.data.items)) {
+                                // Structure: {success: true, data: {items: [...]}}
+                                itemsArray = itemsResult.data.items;
+                              } else if (Array.isArray(itemsResult)) {
+                                // Structure: [...]
+                                itemsArray = itemsResult;
+                              } else {
+                                addToast('error', 'Unexpected API response format');
+                                return;
+                              }
+                              
+                              // Find the item by both name and brand in the server data
+                              const serverItem = itemsArray.find(item => 
+                                item.model === request.itemName && item.brand === request.itemBrand
+                              );
+                              
+                              if (!serverItem) {
+                                addToast('warning', `Item "${request.itemName}" by "${request.itemBrand}" not found in inventory. Please add this item to inventory first.`);
+                                return;
+                              }
+                              
+                              // Use the current quantity from the server
+                              const currentQuantity = serverItem.quantity;
+                              const hasSufficientStock = currentQuantity >= request.quantity;
+                              
+                              setItemToFinish({
+                                ...request,
+                                itemInInventory: serverItem,
+                                hasSufficientStock
+                              });
+                              setShowFinishConfirm(true);
+                              
+                            } catch (error) {
+                              console.error('Error fetching current stock:', error);
+                              addToast('error', 'Connection error. Please check your connection.');
                             }
                           }}
                         >
@@ -488,8 +878,14 @@ export default function StoreManagerPage({
               </tbody>
             </table>
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="no-requests-message">
+            <div className="no-requests-icon">📋</div>
+            <h3>No Approved Requests</h3>
+            <p>There are currently no approved requests to display.</p>
+          </div>
+        )}
+      </div>
 
       {/* Enhanced Edit Modal */}
       {editingItem && (
@@ -640,6 +1036,167 @@ export default function StoreManagerPage({
         </div>
       )}
 
+      {/* Finish Confirmation Modal */}
+      {showFinishConfirm && itemToFinish && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <div className="modal-icon">✅</div>
+              <h3>Mark Request as Finished</h3>
+              <p className="modal-subtitle">Confirm completion of request for {itemToFinish.employeeName}</p>
+            </div>
+            <div className="finish-confirmation-content">
+              <div className="request-details">
+                <div className="detail-row">
+                  <span className="detail-label">Employee:</span>
+                  <span className="detail-value">{itemToFinish.employeeName}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Item:</span>
+                  <span className="detail-value">{itemToFinish.itemName}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Brand:</span>
+                  <span className="detail-value">{itemToFinish.itemBrand || 'N/A'}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Quantity:</span>
+                  <span className="detail-value">{itemToFinish.quantity}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Purpose:</span>
+                  <span className="detail-value purpose-detail">{itemToFinish.purpose}</span>
+                </div>
+              </div>
+              
+              {itemToFinish.itemInInventory && (
+                <div className="inventory-status">
+                  <div className="inventory-header">
+                    <h4>Inventory Status</h4>
+                    <span className={`stock-status ${itemToFinish.hasSufficientStock ? 'in-stock' : 'low-stock'}`}>
+                      {itemToFinish.hasSufficientStock ? '✅ Sufficient Stock' : '⚠️ Insufficient Stock'}
+                    </span>
+                  </div>
+                  <div className="inventory-details">
+                    <div className="inventory-row">
+                      <span className="inventory-label">Current Stock:</span>
+                      <span className="inventory-value">{itemToFinish.itemInInventory.quantity}</span>
+                    </div>
+                    <div className="inventory-row">
+                      <span className="inventory-label">Required:</span>
+                      <span className="inventory-value">{itemToFinish.quantity}</span>
+                    </div>
+                    <div className="inventory-row">
+                      <span className="inventory-label">Remaining After:</span>
+                      <span className="inventory-value">
+                        {itemToFinish.hasSufficientStock ? (itemToFinish.itemInInventory.quantity - itemToFinish.quantity) : '0'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {!itemToFinish.hasSufficientStock && (
+                <div className="stock-warning">
+                  <div className="warning-icon">⚠️</div>
+                  <div className="warning-content">
+                    <h4>Insufficient Stock Warning</h4>
+                    <p>There is not enough stock to fulfill this request. Please restock the item before marking as finished.</p>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="modal-actions">
+              <button 
+                className="cancel-btn"
+                onClick={() => {
+                  setShowFinishConfirm(false);
+                  setItemToFinish(null);
+                }}
+              >
+                Cancel
+              </button>
+              <button 
+                className={`save-btn ${!itemToFinish.hasSufficientStock ? 'disabled' : ''}`}
+                onClick={async () => {
+                  if (!itemToFinish.hasSufficientStock) {
+                    addToast('warning', 'Cannot mark as finished: insufficient stock available');
+                    return;
+                  }
+                  
+                  try {
+                    // Use the request ID directly from the itemToFinish object
+                    const requestId = itemToFinish.id;
+                    
+                    if (!requestId) {
+                      addToast('error', 'Request ID not found');
+                      return;
+                    }
+                    
+                    // Call the finish endpoint directly with the request ID
+                    console.log('Making PUT request to:', `/api/requests/${requestId}/finish`); // Debug log
+                    const finishResponse = await fetch(`/api/requests/${requestId}/finish`, {
+                      method: 'PUT',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      }
+                    });
+                    
+                    console.log('Finish request response status:', finishResponse.status); // Debug log
+                    console.log('Finish request response headers:', finishResponse.headers); // Debug log
+                    
+                    const finishResult = await finishResponse.json();
+                    console.log('Finish request response data:', finishResult); // Debug log
+                    console.log('Finish request error details:', finishResult.error); // Debug log
+                    
+                    if (finishResult.success) {
+                      // Update local inventory
+                      setInventory(prev => prev.map(item => 
+                        item.model === itemToFinish.itemName 
+                          ? { ...item, quantity: item.quantity - itemToFinish.quantity }
+                          : item
+                      ));
+                      
+                      // Show success toast
+                      addToast('success', `✅ Request marked as finished! ${itemToFinish.quantity} ${itemToFinish.itemName}(s) have been deducted from inventory.`);
+                      
+                      // Close modal
+                      setShowFinishConfirm(false);
+                      setItemToFinish(null);
+                      
+                      // Refresh the approved requests list by calling onMarkFinished
+                      if (onMarkFinished) {
+                        onMarkFinished(itemToFinish.employeeName, itemToFinish.itemName, itemToFinish.quantity);
+                      }
+                      
+                      // Refresh the approved requests list
+                      fetchApprovedRequests();
+                    } else {
+                      // Handle specific error messages from backend
+                      if (finishResult.error && finishResult.error.code === 'REQUEST_NOT_FOUND') {
+                        addToast('error', 'Request not found. It may have been already processed.');
+                      } else if (finishResult.error && finishResult.error.code === 'REQUEST_ALREADY_FINISHED') {
+                        addToast('warning', 'This request has already been finished.');
+                      } else if (finishResult.error && finishResult.error.code === 'REQUEST_NOT_APPROVED') {
+                        addToast('warning', 'Only approved requests can be finished.');
+                      } else {
+                        addToast('error', finishResult.message || 'Failed to mark request as finished');
+                      }
+                    }
+                  } catch (error) {
+                    console.error('Error marking request as finished:', error);
+                    addToast('error', 'Connection error. Please check your connection.');
+                  }
+                }}
+                disabled={!itemToFinish.hasSufficientStock}
+              >
+                {itemToFinish.hasSufficientStock ? 'Mark as Finished' : 'Insufficient Stock'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Toast Notifications */}
       <div className="toast-container">
         {toasts.map((toast) => (
@@ -697,10 +1254,12 @@ function StatCard({ icon, label, value, type }) {
 
 function StatusBadge({ quantity }) {
   const isOut = quantity === 0;
+  const isLow = quantity > 0 && quantity <= 5;
+  
   return (
-    <span className={`status-badge ${isOut ? 'badge-out' : 'badge-in'}`}>
-      {isOut ? <XCircle size={12}/> : <CheckCircle size={12}/>}
-      {isOut ? 'Out of Stock' : `${quantity} in stock`}
+    <span className={`status-badge ${isOut ? 'badge-out' : isLow ? 'badge-warning' : 'badge-in'}`}>
+      {isOut ? <XCircle size={12}/> : isLow ? <AlertTriangle size={12}/> : <CheckCircle size={12}/>}
+      {isOut ? 'Out of Stock' : isLow ? `⚠️ Low Stock (${quantity})` : `${quantity} in stock`}
     </span>
   );
 }

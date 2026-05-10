@@ -12,12 +12,72 @@ import FinishedRequests from './FinishedRequests';
 import HeroPage from './HeroPage';
 import EmployeeRegistration from './EmployeeRegistration';
 import HREmployees from './HREmployees';
-import AboutPage from './AboutPage';
+import { loadSession, saveSession, clearSession, isSessionValid, updateLastActivity } from './utils/sessionUtils';
 import './styles.css';
+import './styles/mobile-styles.css';
 
 export default function App() {
   const [view, setView] = useState('hero');
   const [user, setUser] = useState(null);
+
+  // Load user from localStorage on app initialization with session validation
+  useEffect(() => {
+    // Check if session is valid using our session utilities
+    if (isSessionValid()) {
+      const sessionUser = loadSession();
+      if (sessionUser) {
+        setUser(sessionUser);
+        updateLastActivity(); // Update activity timestamp
+        
+        // Set view based on user role if they were logged in
+        const position = sessionUser.position.toLowerCase().trim();
+        const department = sessionUser.department.toLowerCase().trim();
+        
+        let targetView = 'store'; // Default view for regular employees
+        
+        if (department.includes('hr') || position.includes('hr')) {
+          targetView = 'hr-reviews';
+        } else if (department.includes('store') && position.includes('manager')) {
+          targetView = 'store-manager';
+        }
+        
+        // Only update view if we're not already on a specific page
+        const currentHash = window.location.hash.replace('#', '');
+        if (!currentHash || currentHash === 'hero') {
+          setView(targetView);
+          window.location.hash = targetView;
+        }
+      }
+    } else {
+      // Session expired or invalid, clear it
+      clearSession();
+      setUser(null);
+    }
+  }, []);
+
+  // Enhanced session persistence - save user state on user change
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem('currentUser', JSON.stringify(user));
+    }
+  }, [user]);
+
+  // Handle page visibility changes to maintain session
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user) {
+        // Page became visible, ensure user is still authenticated
+        // This helps maintain session across browser tabs/windows
+        localStorage.setItem('currentUser', JSON.stringify(user));
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [user]);
 
   // Handle URL hash changes for navigation
   useEffect(() => {
@@ -142,10 +202,14 @@ export default function App() {
         return;
       }
 
-      // Find the item in inventory to decrease quantity
-      const item = inventory.find(invItem => invItem.model === itemName);
+      // Find the item in inventory - match by model and brand
+      const item = inventory.find(invItem => 
+        invItem.model === itemName && 
+        invItem.brand === (request.itemBrand || request.brand || invItem.brand)
+      );
+      
       if (!item) {
-        alert('Item not found in inventory. Please check the item name.');
+        alert('Item not found in inventory. Please check the item name and brand.');
         return;
       }
 
@@ -258,6 +322,9 @@ export default function App() {
           const employee = result.data;
           setUser(employee);
           
+          // Save user to localStorage for persistence
+          localStorage.setItem('currentUser', JSON.stringify(employee));
+          
           // Role-based navigation based on employee position/department
           const position = employee.position.toLowerCase().trim();
           const department = employee.department.toLowerCase().trim();
@@ -285,6 +352,9 @@ export default function App() {
         if (employee && employee.password === userData.password) {
           setUser(employee);
           
+          // Save user to localStorage for persistence
+          localStorage.setItem('currentUser', JSON.stringify(employee));
+          
           const position = employee.position.toLowerCase().trim();
           const department = employee.department.toLowerCase().trim();
           
@@ -311,6 +381,8 @@ export default function App() {
     setUser(null);
     setView('hero');
     window.location.hash = '';
+    // Clear user from localStorage on logout
+    localStorage.removeItem('currentUser');
   };
 
   const navigateTo = (viewName) => {
@@ -458,7 +530,7 @@ export default function App() {
 
   // About Page View
   if (view === 'about') {
-    return <AboutPage onBack={() => setView('hero')} />;
+    return <HeroPage onLoginClick={() => setView('login')} onAboutClick={() => setView('about')} />;
   }
 
   // Default Hero Page with About Section

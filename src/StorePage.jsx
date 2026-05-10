@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { getImageUrl } from "./config";
-import { notifyWarning } from "./utils/toastUtils";
+import { notifyWarning, notifySuccess, notifyError } from "./utils/toastUtils";
 import Header from "./components/Header";
 import './styles/store-manager-styles.css';
 
@@ -8,7 +8,15 @@ export default function StorePage({ onBack, onRequest, items, isManager = false,
   const [search, setSearch] = useState("");
   const [selectedItem, setSelectedItem] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isRequesting, setIsRequesting] = useState(false);
   const itemsPerPage = 5;
+  
+  // Auto-select first item when items change
+  useEffect(() => {
+    if (items.length > 0 && !selectedItem) {
+      setSelectedItem(items[0]);
+    }
+  }, [items, selectedItem]);
   
   console.log('StorePage received items:', items);
   const filteredItems = items.filter(item => 
@@ -76,7 +84,7 @@ export default function StorePage({ onBack, onRequest, items, isManager = false,
           <p className="subtitle">Browse available items and make requests</p>
         </div>
         <div className="header-actions">
-          <button className="back-btn" onClick={onBack} style={{ position: 'relative', top: 0, left: 0, zIndex: 10 }}>← Back</button>
+          <button className="back-btn" onClick={onBack} style={{ position: 'relative', top: 0, left: 0, zIndex: 10 }}>← logout</button>
           {isManager ? (
             <div style={{display: 'flex', gap: '10px'}}>
               <button className="btn-request" onClick={() => onAddItem && onAddItem()}>
@@ -155,8 +163,8 @@ export default function StorePage({ onBack, onRequest, items, isManager = false,
       {/* Stats Grid */}
       <section className="stats-grid">
         <StatCard icon="📦" label="Total Products" value={items.length} type="total" className="total-card" />
-        <StatCard icon="✅" label="In Stock" value={items.filter(item => item.quantity > 0).length} type="in-stock" className="in-stock-card" />
-        <StatCard icon="⚠️" label="Low Stock" value={items.filter(item => item.quantity > 0 && item.quantity < 5).length} type="low-stock" className="low-stock-card" />
+        <StatCard icon="✅" label="In Stock" value={items.filter(item => item.quantity > 5).length} type="in-stock" className="in-stock-card" />
+        <StatCard icon="⚠️" label="Low Stock" value={items.filter(item => item.quantity > 0 && item.quantity <= 5).length} type="low-stock" className="low-stock-card" />
         <StatCard icon="❌" label="Out of Stock" value={items.filter(item => item.quantity === 0).length} type="out-of-stock" className="out-of-stock-card" />
       </section>
 
@@ -188,7 +196,7 @@ export default function StorePage({ onBack, onRequest, items, isManager = false,
             {paginatedItems.map((item) => (
               <tr 
                 key={item.id} 
-                className={`${item.quantity === 0 ? 'row-out-of-stock' : ''} ${selectedItem && selectedItem.id === item.id ? 'row-selected' : ''}`}
+                className={`${item.quantity === 0 ? 'row-out-of-stock' : ''} ${item.quantity > 0 && item.quantity <= 5 ? 'row-low-stock' : ''} ${selectedItem && selectedItem.id === item.id ? 'row-selected' : ''}`}
                 onClick={() => handleItemSelect(item)}
                 style={{ cursor: 'pointer' }}
               >
@@ -290,9 +298,11 @@ function StatCard({ icon, label, value, type }) {
 
 function StatusBadge({ quantity }) {
   const isOut = quantity === 0;
+  const isLow = quantity > 0 && quantity <= 5;
+  
   return (
-    <span className={`status-badge ${isOut ? 'badge-out' : 'badge-in'}`}>
-      {isOut ? '❌ Out of Stock' : `✅ ${quantity} in stock`}
+    <span className={`status-badge ${isOut ? 'badge-out' : isLow ? 'low-stock' : 'badge-in'}`}>
+      {isOut ? '❌ Out of Stock' : isLow ? `⚠️ Low Stock (${quantity})` : `✅ ${quantity} in stock`}
     </span>
   );
 }

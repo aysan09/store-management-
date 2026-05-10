@@ -1,10 +1,10 @@
 // Configuration file for application settings
 const config = {
     // Backend API base URL
-    API_BASE_URL: 'http://localhost:5000',
+    API_BASE_URL: '', // Use relative URLs to leverage Vite proxy
 
     // Image base URL (can be different from API if using CDN)
-    IMAGE_BASE_URL: 'http://localhost:5000',
+    IMAGE_BASE_URL: '', // Use relative URLs to leverage Vite proxy
 
     // Default image for missing photos
     DEFAULT_IMAGE: 'https://via.placeholder.com/150x150?text=No+Image',
@@ -29,18 +29,18 @@ export const getImageUrl = (photoPath, size = 'MEDIUM') => {
         return photoPath;
     }
 
-    // If starts with /uploads, construct full URL
+    // If starts with /uploads, return as is (backend serves from uploads directory)
     if (photoPath.startsWith('/uploads')) {
-        return `${config.IMAGE_BASE_URL}${photoPath}`;
+        return photoPath;
     }
 
     // If starts with uploads (without leading slash), add the slash
     if (photoPath.startsWith('uploads')) {
-        return `${config.IMAGE_BASE_URL}/${photoPath}`;
+        return `/${photoPath}`;
     }
 
     // If doesn't start with uploads, add it
-    return `${config.IMAGE_BASE_URL}/uploads/${photoPath}`;
+    return `/uploads/${photoPath}`;
 };
 
 // Helper function to get API URL

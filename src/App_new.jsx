@@ -13,6 +13,7 @@ import HeroPage from './HeroPage';
 import EmployeeRegistration from './EmployeeRegistration';
 import SQLWorkbench from './SQLWorkbench';
 import HREmployees from './HREmployees';
+import LoadingPage from './components/LoadingPage';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { notifySuccess, notifyError, notifyWarning } from './utils/toastUtils';
@@ -22,6 +23,7 @@ import './styles/toast-styles.css';
 export default function App() {
   const [view, setView] = useState('hero');
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   // Source of truth for inventory items
   const [inventory, setInventory] = useState([]);
@@ -83,9 +85,9 @@ export default function App() {
           const requestsResult = await requestsResponse.json();
           console.log('Requests result:', requestsResult);
           if (requestsResult.success) {
-            // Backend already returns camelCase field names, no transformation needed
-            setRequests(requestsResult.data);
-            console.log('Requests updated with:', requestsResult.data.length, 'requests');
+            // Backend returns requests wrapped in data.requests
+            setRequests(requestsResult.data.requests || []);
+            console.log('Requests updated with:', (requestsResult.data.requests || []).length, 'requests');
           }
         } else {
           console.error('Failed to fetch requests:', requestsResponse.status);
@@ -115,6 +117,10 @@ export default function App() {
         }
       } catch (error) {
         console.error('Error fetching data:', error);
+      } finally {
+        // Set loading to false after data fetching completes (success or failure)
+        // Use a small timeout to ensure the loading animation is visible for at least a moment
+        setTimeout(() => setLoading(false), 500);
       }
     };
 
@@ -312,6 +318,11 @@ export default function App() {
 
   // --- View Rendering Logic ---
   console.log('Current view:', view);
+
+  // Show loading page while initial data is being fetched
+  if (loading) {
+    return <LoadingPage />;
+  }
 
   if (view === 'login') {
     console.log('Rendering login page');

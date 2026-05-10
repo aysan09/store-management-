@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import "./styles.css";
+import { notifySuccess, notifyError, notifyWarning, notifyInfo } from './utils/toastUtils';
 
 export default function HREmployees({ onBack }) {
   const [employees, setEmployees] = useState([]);
@@ -27,11 +28,11 @@ export default function HREmployees({ onBack }) {
         const data = await response.json();
         setEmployees(data.data || []);
       } else {
-        alert('Failed to load employees');
+        notifyError('Failed to load employees');
       }
     } catch (error) {
       console.error('Error loading employees:', error);
-      alert('Error loading employees. Please check if the server is running.');
+      notifyError('Error loading employees. Please check if the server is running.');
     } finally {
       setLoading(false);
     }
@@ -41,17 +42,17 @@ export default function HREmployees({ onBack }) {
     e.preventDefault();
     
     if (!resetPasswordForm.newPassword || !resetPasswordForm.confirmPassword) {
-      alert('Please enter both new password and confirm password');
+      notifyWarning('Please enter both new password and confirm password');
       return;
     }
 
     if (resetPasswordForm.newPassword !== resetPasswordForm.confirmPassword) {
-      alert('Passwords do not match');
+      notifyError('Passwords do not match');
       return;
     }
 
     if (resetPasswordForm.newPassword.length < 6) {
-      alert('Password must be at least 6 characters long');
+      notifyWarning('Password must be at least 6 characters long');
       return;
     }
 
@@ -67,7 +68,7 @@ export default function HREmployees({ onBack }) {
       });
 
       if (response.ok) {
-        alert('Password reset successfully');
+        notifySuccess('Password reset successfully');
         setShowPassword(false);
         setResetPasswordForm({
           employeeId: '',
@@ -78,16 +79,16 @@ export default function HREmployees({ onBack }) {
         loadEmployees();
       } else {
         const errorData = await response.json();
-        alert(errorData.message || 'Failed to reset password');
+        notifyError(errorData.message || 'Failed to reset password');
       }
     } catch (error) {
       console.error('Error resetting password:', error);
-      alert('Error resetting password. Please check if the server is running.');
+      notifyError('Error resetting password. Please check if the server is running.');
     }
   };
 
   const handleDeleteEmployee = async (employeeId) => {
-    if (!confirm('Are you sure you want to delete this employee? This action cannot be undone.')) {
+    if (!window.confirm('Are you sure you want to delete this employee? This action cannot be undone.')) {
       return;
     }
 
@@ -97,16 +98,16 @@ export default function HREmployees({ onBack }) {
       });
 
       if (response.ok) {
-        alert('Employee deleted successfully');
+        notifySuccess('Employee deleted successfully');
         // Refresh employee list
         loadEmployees();
       } else {
         const errorData = await response.json();
-        alert(errorData.message || 'Failed to delete employee');
+        notifyError(errorData.message || 'Failed to delete employee');
       }
     } catch (error) {
       console.error('Error deleting employee:', error);
-      alert('Error deleting employee. Please check if the server is running.');
+      notifyError('Error deleting employee. Please check if the server is running.');
     }
   };
 
@@ -145,9 +146,9 @@ export default function HREmployees({ onBack }) {
 
   return (
     <div className="employee-management-page">
-      <header className="employee-management-header">
-        <div className="header-content">
-          <button className="back-btn" onClick={onBack}>← Back</button>
+        <header className="employee-management-header">
+          <div className="header-content">
+            <button className="back-btn employee-back-btn" onClick={onBack}>← Back</button>
           <div className="header-info">
             <h1 className="management-title">Employee Management</h1>
             <p className="management-subtitle">Manage employee accounts and access</p>
@@ -266,8 +267,14 @@ export default function HREmployees({ onBack }) {
                     <button 
                       className={`action-btn password-btn ${showPassword && selectedEmployee?.id === employee.id ? 'active' : ''}`}
                       onClick={() => {
-                        setSelectedEmployee(employee);
-                        setShowPassword(!showPassword && selectedEmployee?.id === employee.id);
+                        if (showPassword && selectedEmployee?.id === employee.id) {
+                          // Close the modal if already open for this employee
+                          setShowPassword(false);
+                        } else {
+                          // Open the modal for this employee
+                          setSelectedEmployee(employee);
+                          setShowPassword(true);
+                        }
                       }}
                     >
                       {showPassword && selectedEmployee?.id === employee.id ? 'Hide Password' : 'Reset Password'}

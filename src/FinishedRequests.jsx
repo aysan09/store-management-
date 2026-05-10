@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './styles.css';
+import { notifySuccess, notifyError, notifyInfo } from './utils/toastUtils';
 
 export default function FinishedRequests({ onBack, finishedRequests }) {
   // Use the finishedRequests passed as props instead of fetching separately
@@ -14,6 +15,7 @@ export default function FinishedRequests({ onBack, finishedRequests }) {
     .filter(req => 
       req.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       req.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (req.itemBrand && req.itemBrand.toLowerCase().includes(searchTerm.toLowerCase())) ||
       req.status.toLowerCase().includes(searchTerm.toLowerCase())
     )
     .sort((a, b) => {
@@ -27,6 +29,10 @@ export default function FinishedRequests({ onBack, finishedRequests }) {
         case 'item':
           aVal = a.itemName.toLowerCase();
           bVal = b.itemName.toLowerCase();
+          break;
+        case 'brand':
+          aVal = (a.itemBrand || '').toLowerCase();
+          bVal = (b.itemBrand || '').toLowerCase();
           break;
         case 'quantity':
           aVal = a.quantity;
@@ -73,6 +79,51 @@ export default function FinishedRequests({ onBack, finishedRequests }) {
     }
   };
 
+  // Export finished requests to Excel (CSV format)
+  const handleExport = () => {
+    try {
+      notifyInfo('Exporting finished requests...');
+      
+      if (filteredRequests.length === 0) {
+        notifyError('No finished requests to export');
+        return;
+      }
+
+      // Create CSV content
+      const headers = ['Employee', 'Item', 'Brand', 'Quantity', 'Date Added', 'Date Approved', 'Date Finished', 'Purpose', 'Status'];
+      const csvContent = [
+        headers.join(','),
+        ...filteredRequests.map(req => [
+          `"${req.employeeName || ''}"`,
+          `"${req.itemName || ''}"`,
+          `"${req.itemBrand || ''}"`,
+          req.quantity || 0,
+          `"${req.dateAdded || ''}"`,
+          `"${req.dateApproved || ''}"`,
+          `"${req.dateFinished || ''}"`,
+          `"${req.purpose || ''}"`,
+          `"${req.status || 'Finished'}"`
+        ].join(','))
+      ].join('\n');
+
+      // Create blob and download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `finished_requests_export_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      notifySuccess(`Exported ${filteredRequests.length} finished requests`);
+    } catch (error) {
+      console.error('Error exporting finished requests:', error);
+      notifyError('Failed to export finished requests');
+    }
+  };
+
   return (
     <div className="status-page">
       <div className="status-header">
@@ -80,6 +131,13 @@ export default function FinishedRequests({ onBack, finishedRequests }) {
           <button className="back-btn" onClick={onBack} style={{ fontSize: '24px', background: 'none', border: 'none', cursor: 'pointer', position: 'relative' }}>←</button>
           <h1 className="status-main-title">Finished Requests</h1>
         </div>
+        <button 
+          className="records-btn" 
+          style={{ background: '#0284c7', display: 'flex', alignItems: 'center', gap: '8px' }}
+          onClick={handleExport}
+        >
+          📥 Export
+        </button>
         <div className="status-stats">
           <div className="stat-card">
             <span className="stat-number">{displayRequests.length}</span>
@@ -141,6 +199,15 @@ export default function FinishedRequests({ onBack, finishedRequests }) {
               </div>
               <div 
                 className="table-header-cell"
+                onClick={() => handleSort('brand')}
+              >
+                Brand
+                {sortBy === 'brand' && (
+                  <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                )}
+              </div>
+              <div 
+                className="table-header-cell"
                 onClick={() => handleSort('quantity')}
               >
                 Qty
@@ -190,8 +257,10 @@ export default function FinishedRequests({ onBack, finishedRequests }) {
                 <div className="item-cell">
                   <div className="item-info">
                     <div className="item-name">{req.itemName}</div>
-                    <div className="item-category">{req.itemCategory || 'General'}</div>
                   </div>
+                </div>
+                <div className="brand-cell">
+                  {req.itemBrand}
                 </div>
                 <div className="quantity-cell">
                   <span className="quantity-badge">{req.quantity}</span>
@@ -199,21 +268,21 @@ export default function FinishedRequests({ onBack, finishedRequests }) {
                 <div className="date-cell">
                   <div className="date-info">
                     <div className="date-added">
-                      {formatDate(req.dateAdded)}
+                      {(req.dateAdded)}
                     </div>
                   </div>
                 </div>
                 <div className="date-cell">
                   <div className="date-info">
                     <div className="date-added">
-                      {formatDate(req.dateApproved)}
+                      {(req.dateApproved)}
                     </div>
                   </div>
                 </div>
                 <div className="date-cell">
                   <div className="date-info">
                     <div className="date-added">
-                      {formatDate(req.dateFinished)}
+                      {(req.dateFinished)}
                     </div>
                   </div>
                 </div>

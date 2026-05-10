@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import AddItemModal from "./AddItemModal";
-import { notifySuccess, notifyError } from "./utils/toastUtils";
+import { notifySuccess, notifyError, notifyInfo } from "./utils/toastUtils";
 import './styles/store-manager-styles.css';
 
 export default function StoreManager({ onBack, inventory, setInventory, onViewRequests }) {
@@ -12,6 +12,34 @@ export default function StoreManager({ onBack, inventory, setInventory, onViewRe
     if (window.confirm(`Are you sure you want to delete "${item.model}" by ${item.brand}? This action cannot be undone.`)) {
       setInventory(inventory.filter(item => item.id !== id));
       notifySuccess(`✅ Successfully deleted "${item.model}" from inventory.`);
+    }
+  };
+
+  // Export inventory to Excel
+  const handleExport = async () => {
+    try {
+      notifyInfo('Exporting inventory to Excel...');
+      const response = await fetch('/api/items/export');
+      
+      if (!response.ok) {
+        throw new Error('Export failed');
+      }
+      
+      // Create blob from response and download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `items_export_${new Date().toISOString().split('T')[0]}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      notifySuccess('Inventory exported successfully!');
+    } catch (error) {
+      console.error('Error exporting items:', error);
+      notifyError('Failed to export items');
     }
   };
 
@@ -32,53 +60,76 @@ export default function StoreManager({ onBack, inventory, setInventory, onViewRe
       font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     `;
     
-    modal.innerHTML = `
-      <div style="
-        background: white;
-        padding: 30px;
-        border-radius: 16px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        text-align: center;
-        max-width: 400px;
-        width: 90%;
-        border: 2px solid #e5e7eb;
-      ">
-        <div style="font-size: 48px; margin-bottom: 15px;">✏️</div>
-        <h3 style="color: #1e40af; margin: 0 0 10px 0; font-size: 20px;">Edit Item</h3>
-        <p style="color: #374151; margin: 0 0 20px 0; font-size: 14px; line-height: 1.5;">
-          You are about to edit <strong>"${item.model}"</strong> by <strong>${item.brand}</strong>
-        </p>
-        <div style="display: flex; gap: 10px; justify-content: center;">
-          <button onclick="this.closest('.modal-overlay').remove()" style="
-            background: #64748b;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-size: 12px;
-          ">Cancel</button>
-          <button onclick="this.closest('.modal-overlay').remove(); alert('Edit functionality for \\"${item.model}\\" would open here.')" style="
-            background: linear-gradient(135deg, #1e40af, #1e3a8a);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-size: 12px;
-          ">Edit Item</button>
-        </div>
+    const modalContent = document.createElement('div');
+    modalContent.style.cssText = `
+      background: white;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      text-align: center;
+      max-width: 400px;
+      width: 90%;
+      border: 2px solid #e5e7eb;
+    `;
+    
+    modalContent.innerHTML = `
+      <div style="font-size: 48px; margin-bottom: 15px;">✏️</div>
+      <h3 style="color: #1e40af; margin: 0 0 10px 0; font-size: 20px;">Edit Item</h3>
+      <p style="color: #374151; margin: 0 0 20px 0; font-size: 14px; line-height: 1.5;">
+        You are about to edit <strong>"${item.model}"</strong> by <strong>${item.brand}</strong>
+      </p>
+      <div style="display: flex; gap: 10px; justify-content: center;">
+        <button id="cancel-btn" style="
+          background: #64748b;
+          color: white;
+          border: none;
+          padding: 10px 20px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          font-size: 12px;
+        ">Cancel</button>
+        <button id="edit-btn" style="
+          background: linear-gradient(135deg, #1e40af, #1e3a8a);
+          color: white;
+          border: none;
+          padding: 10px 20px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          font-size: 12px;
+        ">Edit Item</button>
       </div>
     `;
     
+    modal.appendChild(modalContent);
     modal.className = 'modal-overlay';
     document.body.appendChild(modal);
+    
+    // Add event listeners to buttons
+    const cancelBtn = modalContent.querySelector('#cancel-btn');
+    const editBtn = modalContent.querySelector('#edit-btn');
+    
+    const closeModal = () => {
+      modal.remove();
+    };
+    
+    cancelBtn.addEventListener('click', closeModal);
+    editBtn.addEventListener('click', () => {
+      closeModal();
+      alert(`Edit functionality for "${item.model}" would open here.`);
+    });
+    
+    // Add event listener to handle clicks outside the modal
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        closeModal();
+      }
+    });
   };
 
   // Calculate statistics
@@ -98,9 +149,10 @@ export default function StoreManager({ onBack, inventory, setInventory, onViewRe
       <div className="store-manager-header">
         <button className="back-btn" onClick={onBack} style={{ position: 'relative' }}>← Logout</button>
         <h1 className="store-manager-title">Store Manager</h1>
-        <div style={{display: 'flex', gap: '10px'}}>
+      <div style={{display: 'flex', gap: '10px'}}>
           <button className="records-btn" style={{background: '#059669'}} onClick={() => setShowAddModal(true)}>+ Add New Item</button>
           <button className="records-btn" style={{background: '#059669'}} onClick={() => onViewRequests && onViewRequests()}>View Requests</button>
+          <button className="records-btn" style={{background: '#0284c7'}} onClick={handleExport}>📥 Export Items</button>
         </div>
       </div>
 

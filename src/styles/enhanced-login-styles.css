@@ -223,22 +223,6 @@
   top: 2px;
 }
 
-/* Animation States */
-.robot-character.is-hiding .robot-arm.left {
-  transform: rotate(45deg);
-}
-
-.robot-character.is-hiding .robot-arm.right {
-  transform: rotate(-45deg);
-}
-
-.robot-character.is-hiding .robot-hand.left {
-  transform: rotate(45deg) translateY(-20px);
-}
-
-.robot-character.is-hiding .robot-hand.right {
-  transform: rotate(-45deg) translateY(-20px);
-}
 
 /* Brand Logo */
 .login-brand {
@@ -349,11 +333,6 @@
   outline-offset: 2px;
 }
 
-/* Robot Character Animation on Password Focus */
-.password-input:focus ~ .login-btn {
-  /* This selector is not needed for the robot animation */
-}
-
 /* Robot Character Animation when password field is focused */
 .robot-character.is-hiding .robot-arm.left {
   transform: rotate(-45deg);
@@ -389,8 +368,9 @@
   transition: all 0.3s ease;
 }
 
+/* Robot character - no rotation animation, only static positioning */
 .robot-character {
-  animation: float 3s ease-in-out infinite;
+  /* Removed infinite float animation to stop rotation */
 }
 
 /* Enhanced Login Card to prevent clipping */
@@ -437,17 +417,10 @@
   }
 }
 
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-5px);
-  }
-}
+/* Float animation removed - robot character is now static */
 
 .robot-character {
-  animation: float 3s ease-in-out infinite;
+  /* Static positioning - no animation */
 }
 
 /* Responsive Design */
@@ -579,7 +552,7 @@
   right: -5px;
   bottom: -5px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #1e40af, #1e3a8a);
+  background: linear-gradient( #1e40af, #1e3a8a);
   filter: blur(10px);
   opacity: 0.3;
   z-index: -1;

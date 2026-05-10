@@ -549,6 +549,34 @@ body {
   }
 }
 
+/* Back Button Styles */
+.back-btn {
+  background: white;
+  color: #1e40af;
+  border: 2px solid #e5e7eb;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.back-btn:hover {
+  background: #f8fafc;
+  border-color: #1e40af;
+  transform: translateX(-4px);
+  box-shadow: 0 4px 8px rgba(30, 64, 175, 0.15);
+}
+
+.back-btn:active {
+  transform: translateX(-2px);
+}
+
 /* Enhanced Employee Management Styles */
 .employee-management-page {
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);

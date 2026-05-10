@@ -41,6 +41,7 @@ export default function ApprovedRequests({ onBack }) {
         <div className="hr-table-header">
           <div>Employee</div>
           <div>Item</div>
+          <div>Brand</div>
           <div>Qty</div>
           <div>Date</div>
           <div>Purpose</div>
@@ -52,6 +53,7 @@ export default function ApprovedRequests({ onBack }) {
             <div className="hr-table-row" key={index}>
               <div>{req.employeeName}</div>
               <div>{req.itemName}</div>
+              <div>{req.itemBrand || 'N/A'}</div>
               <div>{req.quantity}</div>
               <div style={{fontSize: '12px', color: '#666'}}>{req.dateAdded || 'N/A'}</div>
               <div className="purpose-text">{req.purpose}</div>

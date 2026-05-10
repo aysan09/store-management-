@@ -67,16 +67,27 @@ async function initDatabase() {
         id INT AUTO_INCREMENT PRIMARY KEY,
         employee_name VARCHAR(255) NOT NULL,
         item_name VARCHAR(255) NOT NULL,
+        item_brand VARCHAR(255),
         quantity INT NOT NULL,
         purpose TEXT,
         status VARCHAR(50) DEFAULT 'Pending',
         date_added DATETIME DEFAULT CURRENT_TIMESTAMP,
         date_approved DATETIME,
         date_finished DATETIME,
-       
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
     `);
+
+    // Add item_brand column if it doesn't exist
+    try {
+      await db.execute('ALTER TABLE requests ADD COLUMN item_brand VARCHAR(255) AFTER item_name');
+      console.log('✅ Added item_brand column to requests table');
+    } catch (err) {
+      // Column might already exist
+      if (err.code !== 'ER_DUP_FIELDNAME') {
+        console.error('Error adding item_brand column:', err.message);
+      }
+    }
     console.log('✅ Requests table created successfully');
 
     // Check if employees table has data

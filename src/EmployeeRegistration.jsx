@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './styles/employee-styles.css';
+import { notifySuccess, notifyError, notifyWarning } from './utils/toastUtils';
 
 export default function EmployeeRegistration({ onBack, onAddEmployee }) {
   const [form, setForm] = useState({
@@ -25,7 +26,16 @@ export default function EmployeeRegistration({ onBack, onAddEmployee }) {
       const response = await fetch('/api/employees');
       if (response.ok) {
         const data = await response.json();
-        setEmployees(data.data || []);
+        // Transform backend field names to frontend field names
+        const transformedEmployees = (data.data || []).map(emp => ({
+          id: emp.id,
+          name: emp.name,
+          department: emp.department,
+          position: emp.position,
+          employeeId: emp.employee_id,
+          dateCreated: emp.date_created
+        }));
+        setEmployees(transformedEmployees);
       }
     } catch (error) {
       console.error('Error loading employees:', error);
@@ -36,12 +46,12 @@ export default function EmployeeRegistration({ onBack, onAddEmployee }) {
     e.preventDefault();
     
     if (!form.name || !form.department || !form.position || !form.employee_Id || !form.password) {
-      alert("Please fill in all required fields");
+      notifyWarning("Please fill in all required fields");
       return;
     }
 
     if (form.password !== form.confirmPassword) {
-      alert("Passwords do not match");
+      notifyError("Passwords do not match");
       return;
     }
 
@@ -93,13 +103,13 @@ export default function EmployeeRegistration({ onBack, onAddEmployee }) {
           confirmPassword: ""
         });
         
-        alert("Employee registered successfully!");
+        notifySuccess("Employee registered successfully!");
       } else {
-        alert(data.message || "Failed to register employee");
+        notifyError(data.message || "Failed to register employee");
       }
     } catch (error) {
       console.error('Error registering employee:', error);
-      alert(`Registration failed: ${error.message}\n\nPlease ensure:\n1. Backend server is running on port 5000\n2. Database is accessible\n3. Check browser console for more details`);
+      notifyError(`Registration failed: ${error.message}`);
     } finally {
       setLoading(false);
     }
