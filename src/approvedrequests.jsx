@@ -51,13 +51,13 @@ export default function ApprovedRequests({ onBack }) {
         {approvedRequests && approvedRequests.length > 0 ? (
           approvedRequests.map((req, index) => (
             <div className="hr-table-row" key={index}>
-              <div>{req.employeeName}</div>
-              <div>{req.itemName}</div>
-              <div>{req.itemBrand || 'N/A'}</div>
-              <div>{req.quantity}</div>
-              <div style={{fontSize: '12px', color: '#666'}}>{req.dateAdded || 'N/A'}</div>
-              <div className="purpose-text">{req.purpose}</div>
-              <div style={{ 
+              <div data-label="Employee">{req.employeeName}</div>
+              <div data-label="Item">{req.itemName}</div>
+              <div data-label="Brand">{req.itemBrand || 'N/A'}</div>
+              <div data-label="Quantity">{req.quantity}</div>
+              <div data-label="Date" style={{fontSize: '12px', color: '#666'}}>{req.dateAdded || 'N/A'}</div>
+              <div data-label="Purpose" className="purpose-text">{req.purpose}</div>
+              <div data-label="Status" style={{ 
                 fontWeight: 'bold', 
                 color: '#22c55e' 
               }}>

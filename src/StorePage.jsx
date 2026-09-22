@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { getImageUrl } from "./config";
 import { notifyWarning, notifySuccess, notifyError } from "./utils/toastUtils";
 import Header from "./components/Header";
+import ExpandableSearch from './components/ExpandableSearch';
+import { LogOut } from 'lucide-react';
 import './styles/store-manager-styles.css';
 
 export default function StorePage({ onBack, onRequest, items, isManager = false, onEdit, onDelete, onAddItem }) {
@@ -9,6 +11,8 @@ export default function StorePage({ onBack, onRequest, items, isManager = false,
   const [selectedItem, setSelectedItem] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [isRequesting, setIsRequesting] = useState(false);
+  const [showOutOfStockNotice, setShowOutOfStockNotice] = useState(false);
+  const [outOfStockNoticeStatus, setOutOfStockNoticeStatus] = useState('idle');
   const itemsPerPage = 5;
   
   // Auto-select first item when items change
@@ -41,38 +45,38 @@ export default function StorePage({ onBack, onRequest, items, isManager = false,
   };
 
   const handleRequestItem = () => {
-    console.log('handleRequestItem called, selectedItem:', selectedItem);
-    console.log('onRequest function:', onRequest);
-    
-    // Always call onRequest, with or without selected item
-    if (onRequest) {
-      console.log('Calling onRequest');
-      try {
-        if (selectedItem) {
-          console.log('Calling onRequest with selectedItem');
-          onRequest(selectedItem);
-        } else {
-          console.log('Calling onRequest without selectedItem');
-          onRequest();
-        }
-        console.log('onRequest call completed successfully');
-      } catch (error) {
-        console.error('Error calling onRequest:', error);
-      }
-    } else {
-      console.log('onRequest is not defined');
+    if (!onRequest) return;
+    onRequest(selectedItem || undefined);
+  };
+
+  const handleNotifyOutOfStock = async () => {
+    if (!selectedItem) return;
+
+    setOutOfStockNoticeStatus('sending');
+    try {
+      const response = await fetch(`/api/items/${selectedItem.id}/notify-hr`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (!response.ok) throw new Error('Server error');
+      setOutOfStockNoticeStatus('success');
+      notifySuccess(`HR was notified about ${selectedItem.model}.`);
+    } catch (error) {
+      console.error('Failed to notify HR:', error);
+      setOutOfStockNoticeStatus('error');
+      notifyError('Failed to notify HR. Please try again.');
     }
   };
 
-  const handleDirectRequest = () => {
-    console.log('handleDirectRequest called');
-    // Navigate directly to request form
-    if (onRequest) {
-      console.log('Calling onRequest without parameters');
-      onRequest();
-    } else {
-      console.log('onRequest is not defined');
+  const handleMakeRequest = () => {
+    if (selectedItem && Number(selectedItem.quantity) === 0) {
+      setOutOfStockNoticeStatus('idle');
+      setShowOutOfStockNotice(true);
+      return;
     }
+
+    handleRequestItem();
   };
 
   return (
@@ -83,8 +87,16 @@ export default function StorePage({ onBack, onRequest, items, isManager = false,
           <h1><span className="title-icon">📦</span> Store Inventory</h1>
           <p className="subtitle">Browse available items and make requests</p>
         </div>
-        <div className="header-actions">
-          <button className="back-btn" onClick={onBack} style={{ position: 'relative', top: 0, left: 0, zIndex: 10 }}>← logout</button>
+        <div className={`header-actions ${isManager ? '' : 'employee-store-actions'}`}>
+          <button
+            className="back-btn"
+            onClick={onBack}
+            style={{ position: 'relative', top: 0, left: 0, zIndex: 10 }}
+            aria-label="Logout"
+            title="Logout"
+          >
+            <LogOut size={16} aria-hidden="true" />
+          </button>
           {isManager ? (
             <div style={{display: 'flex', gap: '10px'}}>
               <button className="btn-request" onClick={() => onAddItem && onAddItem()}>
@@ -122,38 +134,7 @@ export default function StorePage({ onBack, onRequest, items, isManager = false,
               </button>
             </div>
           ) : (
-              <button 
-                className="btn-request" 
-                onClick={async () => {
-                  // Check if selected item is out of stock and notify HR
-                  if (selectedItem && selectedItem.quantity === 0) {
-                    try {
-                      const response = await fetch(`/api/items/${selectedItem.id}/notify-hr`, {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json',
-                        }
-                      });
-                      
-                      if (response.ok) {
-                        // Show success popup
-                        alert(`✅ Notification sent successfully!\n\nItem: ${selectedItem.model}\nBrand: ${selectedItem.brand}\nStatus: Out of Stock\n\nHR has been notified to reorder this item.`);
-                        notifyWarning(`⚠️ ${selectedItem.model} is out of stock. HR has been notified to reorder.`);
-                      } else {
-                        throw new Error('Server error');
-                      }
-                    } catch (error) {
-                      console.error('Failed to notify HR:', error);
-                      alert(`❌ Failed to send notification to HR.\n\nItem: ${selectedItem.model}\nBrand: ${selectedItem.brand}\n\nPlease notify HR manually about this out-of-stock item.`);
-                      notifyWarning(`⚠️ ${selectedItem.model} is out of stock. Please notify HR manually.`);
-                    }
-                  }
-                  
-                  // Notify about the request submission
-                  notifyWarning(`📋 New request submitted. HR team should review pending requests.`);
-                  handleRequestItem();
-                }}
-              >
+              <button className="btn-request" onClick={handleMakeRequest}>
                 📋 Make Request
               </button>
           )}
@@ -169,15 +150,12 @@ export default function StorePage({ onBack, onRequest, items, isManager = false,
       </section>
 
       {/* Search Bar */}
-      <div className="search-container">
-        <input 
-          type="text" 
-          placeholder="Search products, brand, or category..." 
-          className="search-input"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-      </div>
+      <ExpandableSearch
+        className="search-container"
+        placeholder="Search products, brand, or category..."
+        value={search}
+        onChange={setSearch}
+      />
 
       {/* Table */}
       <div className="inventory-table-container">
@@ -203,7 +181,10 @@ export default function StorePage({ onBack, onRequest, items, isManager = false,
                 <td>
                   <img src={getImageUrl(item.photo)} alt={item.model} style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '8px' }} />
                 </td>
-                <td className="model-cell start-at-center">{item.model}</td>
+                <td className="model-cell start-at-center">
+                  <span className="product-model-label">Model</span>
+                  <span className="product-model-value">{item.model}</span>
+                </td>
                 <td className="brand-cell start-at-center">{item.brand}</td>
                 <td className="start-at-center">{item.category || 'General'}</td>
                 <td className="start-at-center">{item.quantity}</td>
@@ -219,16 +200,66 @@ export default function StorePage({ onBack, onRequest, items, isManager = false,
       {/* Selected Item Info */}
       {selectedItem && (
         <div className="selected-item-info">
-          <h3>Selected Item: {selectedItem.model}</h3>
-          <p>Brand: {selectedItem.brand}</p>
-          <p>Category: {selectedItem.category || 'General'}</p>
-          <p>Available Quantity: {selectedItem.quantity}</p>
+          <div className="selected-item-heading">
+            <span className="selected-item-eyebrow">Selected product</span>
+            <h3>Product details</h3>
+          </div>
+          <div className="selected-item-details">
+            <div className="product-detail-row">
+              <span className="product-detail-label">Model</span>
+              <strong>{selectedItem.model}</strong>
+            </div>
+            <div className="product-detail-row">
+              <span className="product-detail-label">Brand</span>
+              <strong>{selectedItem.brand}</strong>
+            </div>
+            <div className="product-detail-row">
+              <span className="product-detail-label">Category</span>
+              <strong>{selectedItem.category || 'General'}</strong>
+            </div>
+            <div className="product-detail-row">
+              <span className="product-detail-label">Available quantity</span>
+              <strong>{selectedItem.quantity}</strong>
+            </div>
+          </div>
           <div className="selected-item-actions">
             {!isManager && (
-              <button className="btn-request" onClick={handleRequestItem}>
+              <button className="btn-request" onClick={handleMakeRequest}>
                 Request This Item
               </button>
             )}
+          </div>
+        </div>
+      )}
+
+      {showOutOfStockNotice && selectedItem && (
+        <div className="modal-overlay" onClick={() => setShowOutOfStockNotice(false)}>
+          <div className="modal-content out-of-stock-notice" onClick={(event) => event.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-icon">⚠️</div>
+              <h3>Item out of stock</h3>
+              <p className="modal-subtitle">
+                {selectedItem.model} is currently unavailable. You cannot submit a request for zero stock.
+              </p>
+            </div>
+            {outOfStockNoticeStatus === 'success' && (
+              <p className="out-of-stock-success">HR has been notified to reorder this item.</p>
+            )}
+            {outOfStockNoticeStatus === 'error' && (
+              <p className="out-of-stock-error">Notification failed. Please try again.</p>
+            )}
+            <div className="modal-actions">
+              <button className="btn-edit-del" onClick={() => setShowOutOfStockNotice(false)}>
+                Close
+              </button>
+              <button
+                className="btn-request"
+                onClick={handleNotifyOutOfStock}
+                disabled={outOfStockNoticeStatus === 'sending' || outOfStockNoticeStatus === 'success'}
+              >
+                {outOfStockNoticeStatus === 'sending' ? 'Notifying...' : outOfStockNoticeStatus === 'success' ? 'Notified' : 'Notify HR'}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -270,11 +301,11 @@ export default function StorePage({ onBack, onRequest, items, isManager = false,
 function StatCard({ icon, label, value, type }) {
   // Determine background color based on stat type
   let bgColor = '#eff6ff'; // Default blue
-  let iconColor = '#2563eb'; // Default blue
+  let iconColor = '#3ba7f2'; // Default blue
   
   if (type === 'in-stock') {
     bgColor = '#ecfdf5';
-    iconColor = '#059669';
+    iconColor = '#3ba7f2';
   } else if (type === 'low-stock') {
     bgColor = '#fffbeb';
     iconColor = '#d97706';

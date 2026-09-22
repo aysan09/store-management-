@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import AddItemModal from "./AddItemModal";
 import { notifySuccess, notifyError, notifyInfo } from "./utils/toastUtils";
 import './styles/store-manager-styles.css';
+import ExpandableSearch from './components/ExpandableSearch';
 
 export default function StoreManager({ onBack, inventory, setInventory, onViewRequests }) {
   const [showAddModal, setShowAddModal] = useState(false);
@@ -74,7 +75,7 @@ export default function StoreManager({ onBack, inventory, setInventory, onViewRe
     
     modalContent.innerHTML = `
       <div style="font-size: 48px; margin-bottom: 15px;">✏️</div>
-      <h3 style="color: #1e40af; margin: 0 0 10px 0; font-size: 20px;">Edit Item</h3>
+      <h3 style="color: #0b3D91; margin: 0 0 10px 0; font-size: 20px;">Edit Item</h3>
       <p style="color: #374151; margin: 0 0 20px 0; font-size: 14px; line-height: 1.5;">
         You are about to edit <strong>"${item.model}"</strong> by <strong>${item.brand}</strong>
       </p>
@@ -92,7 +93,7 @@ export default function StoreManager({ onBack, inventory, setInventory, onViewRe
           font-size: 12px;
         ">Cancel</button>
         <button id="edit-btn" style="
-          background: linear-gradient(135deg, #1e40af, #1e3a8a);
+          background: linear-gradient(135deg, #0b3D91, #062b68);
           color: white;
           border: none;
           padding: 10px 20px;
@@ -150,8 +151,8 @@ export default function StoreManager({ onBack, inventory, setInventory, onViewRe
         <button className="back-btn" onClick={onBack} style={{ position: 'relative' }}>← Logout</button>
         <h1 className="store-manager-title">Store Manager</h1>
       <div style={{display: 'flex', gap: '10px'}}>
-          <button className="records-btn" style={{background: '#059669'}} onClick={() => setShowAddModal(true)}>+ Add New Item</button>
-          <button className="records-btn" style={{background: '#059669'}} onClick={() => onViewRequests && onViewRequests()}>View Requests</button>
+          <button className="records-btn" style={{background: '#3ba7f2'}} onClick={() => setShowAddModal(true)}>+ Add New Item</button>
+          <button className="records-btn" style={{background: '#3ba7f2'}} onClick={() => onViewRequests && onViewRequests()}>View Requests</button>
           <button className="records-btn" style={{background: '#0284c7'}} onClick={handleExport}>📥 Export Items</button>
         </div>
       </div>
@@ -179,14 +180,11 @@ export default function StoreManager({ onBack, inventory, setInventory, onViewRe
 
         {/* Search Section */}
         <div className="store-manager-search-section">
-          <div className="search-box">
-            <input 
-              type="text" 
-              placeholder="Search items by model or brand..." 
-              value={search} 
-              onChange={e => setSearch(e.target.value)} 
-            />
-          </div>
+          <ExpandableSearch
+            placeholder="Search items by model or brand..."
+            value={search}
+            onChange={setSearch}
+          />
         </div>
         
         {/* Table */}
@@ -212,7 +210,8 @@ export default function StoreManager({ onBack, inventory, setInventory, onViewRe
               </div>
               
               <div className="table-cell item-cell">
-                <div className="item-name">{item.model}</div>
+                <span className="product-model-label">Model</span>
+                <div className="item-name product-model-value">{item.model}</div>
               </div>
               
               <div className="table-cell brand-cell">

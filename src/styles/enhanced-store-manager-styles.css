@@ -95,7 +95,7 @@
 }
 
 .approved-requests-table-container tr:hover {
-  background-color: #f8fafc;
+  background-color: #E8F6FF;
 }
 
 /* Status Badge Enhancements */
@@ -112,7 +112,7 @@
 
 .status-badge.badge-in {
   background: #ecfdf5;
-  color: #059669;
+  color: #3ba7f2;
   border-color: #d1fae5;
 }
 
@@ -160,8 +160,8 @@
 
 /* Inventory Status Section */
 .inventory-status {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: #E8F6FF;
+  border: 1px solid #cfeeff;
   border-radius: 10px;
   padding: 16px;
   margin: 16px 0;
@@ -190,7 +190,7 @@
 
 .stock-status.in-stock {
   background: #ecfdf5;
-  color: #059669;
+  color: #3ba7f2;
   border-color: #d1fae5;
 }
 
@@ -230,8 +230,8 @@
 
 /* Request Details */
 .request-details {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: #E8F6FF;
+  border: 1px solid #cfeeff;
   border-radius: 10px;
   padding: 16px;
   margin-bottom: 16px;
@@ -461,7 +461,7 @@
 }
 
 .toast.toast-success .toast-icon svg {
-  color: #10b981;
+  color: #7FE7D6;
 }
 
 .toast.toast-error .toast-icon svg {

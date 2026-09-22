@@ -140,47 +140,47 @@ const PerformanceMonitor = () => {
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.25rem' }}>
         <div>Load Time:</div>
-        <div style={{ color: metrics.loadTime > 3000 ? '#ef4444' : metrics.loadTime > 1000 ? '#f59e0b' : '#10b981' }}>
+        <div style={{ color: metrics.loadTime > 3000 ? '#ef4444' : metrics.loadTime > 1000 ? '#f59e0b' : '#7FE7D6' }}>
           {metrics.loadTime}ms
         </div>
         
         <div>DOM Content:</div>
-        <div style={{ color: metrics.domContentLoaded > 1500 ? '#ef4444' : metrics.domContentLoaded > 800 ? '#f59e0b' : '#10b981' }}>
+        <div style={{ color: metrics.domContentLoaded > 1500 ? '#ef4444' : metrics.domContentLoaded > 800 ? '#f59e0b' : '#7FE7D6' }}>
           {metrics.domContentLoaded}ms
         </div>
         
         <div>First Paint:</div>
-        <div style={{ color: metrics.firstPaint > 1500 ? '#ef4444' : metrics.firstPaint > 800 ? '#f59e0b' : '#10b981' }}>
+        <div style={{ color: metrics.firstPaint > 1500 ? '#ef4444' : metrics.firstPaint > 800 ? '#f59e0b' : '#7FE7D6' }}>
           {metrics.firstPaint}ms
         </div>
         
         <div>FCP:</div>
-        <div style={{ color: metrics.firstContentfulPaint > 1800 ? '#ef4444' : metrics.firstContentfulPaint > 1200 ? '#f59e0b' : '#10b981' }}>
+        <div style={{ color: metrics.firstContentfulPaint > 1800 ? '#ef4444' : metrics.firstContentfulPaint > 1200 ? '#f59e0b' : '#7FE7D6' }}>
           {metrics.firstContentfulPaint}ms
         </div>
         
         <div>LCP:</div>
-        <div style={{ color: metrics.largestContentfulPaint > 4000 ? '#ef4444' : metrics.largestContentfulPaint > 2500 ? '#f59e0b' : '#10b981' }}>
+        <div style={{ color: metrics.largestContentfulPaint > 4000 ? '#ef4444' : metrics.largestContentfulPaint > 2500 ? '#f59e0b' : '#7FE7D6' }}>
           {metrics.largestContentfulPaint}ms
         </div>
         
         <div>CLS:</div>
-        <div style={{ color: metrics.cumulativeLayoutShift > 0.25 ? '#ef4444' : metrics.cumulativeLayoutShift > 0.1 ? '#f59e0b' : '#10b981' }}>
+        <div style={{ color: metrics.cumulativeLayoutShift > 0.25 ? '#ef4444' : metrics.cumulativeLayoutShift > 0.1 ? '#f59e0b' : '#7FE7D6' }}>
           {metrics.cumulativeLayoutShift}
         </div>
         
         <div>FID:</div>
-        <div style={{ color: metrics.firstInputDelay > 300 ? '#ef4444' : metrics.firstInputDelay > 100 ? '#f59e0b' : '#10b981' }}>
+        <div style={{ color: metrics.firstInputDelay > 300 ? '#ef4444' : metrics.firstInputDelay > 100 ? '#f59e0b' : '#7FE7D6' }}>
           {metrics.firstInputDelay}ms
         </div>
         
         <div>Memory:</div>
-        <div style={{ color: metrics.memoryUsage > 100 ? '#ef4444' : metrics.memoryUsage > 50 ? '#f59e0b' : '#10b981' }}>
+        <div style={{ color: metrics.memoryUsage > 100 ? '#ef4444' : metrics.memoryUsage > 50 ? '#f59e0b' : '#7FE7D6' }}>
           {metrics.memoryUsage}MB
         </div>
         
         <div>Connection:</div>
-        <div style={{ color: metrics.connectionType === '4g' ? '#10b981' : metrics.connectionType === '3g' ? '#f59e0b' : '#ef4444' }}>
+        <div style={{ color: metrics.connectionType === '4g' ? '#7FE7D6' : metrics.connectionType === '3g' ? '#f59e0b' : '#ef4444' }}>
           {metrics.connectionType}
         </div>
       </div>

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import "./styles.css";
 import { notifySuccess, notifyError, notifyWarning, notifyInfo } from './utils/toastUtils';
+import SortDropdown from './components/SortDropdown';
+import ExpandableSearch from './components/ExpandableSearch';
 
 export default function HREmployees({ onBack }) {
   const [employees, setEmployees] = useState([]);
@@ -165,32 +167,23 @@ export default function HREmployees({ onBack }) {
       <div className="management-container">
         {/* Search and Filter Section */}
         <div className="search-section">
-          <div className="search-box">
-            <input
-              type="text"
-              placeholder="Search employees by name, department, position, or ID..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="search-input"
-            />
-            <span className="search-icon">🔍</span>
-          </div>
+          <ExpandableSearch
+            placeholder="Search employees by name, department, position, or ID..."
+            value={searchTerm}
+            onChange={setSearchTerm}
+          />
           <div className="sort-controls">
-            <span className="sort-label">Sort by:</span>
-            {['name', 'department', 'position', 'date_created'].map((field) => (
-              <button
-                key={field}
-                className={`sort-btn ${sortBy === field ? 'active' : ''}`}
-                onClick={() => handleSort(field)}
-              >
-                {field === 'name' ? 'Name' : 
-                 field === 'department' ? 'Department' : 
-                 field === 'position' ? 'Position' : 'Date Created'}
-                {sortBy === field && (
-                  <span>{sortOrder === 'asc' ? ' ↑' : ' ↓'}</span>
-                )}
-              </button>
-            ))}
+            <SortDropdown
+              options={[
+                { value: 'name', label: 'Name' },
+                { value: 'department', label: 'Department' },
+                { value: 'position', label: 'Position' },
+                { value: 'date_created', label: 'Date Created' }
+              ]}
+              value={sortBy}
+              order={sortOrder}
+              onChange={handleSort}
+            />
           </div>
         </div>
 
@@ -211,26 +204,11 @@ export default function HREmployees({ onBack }) {
         ) : (
           <div className="employee-table-container">
             <div className="employee-table-header">
-              <div className="table-header-cell" onClick={() => handleSort('name')}>
-                Employee Name
-                {sortBy === 'name' && <span>{sortOrder === 'asc' ? ' ↑' : ' ↓'}</span>}
-              </div>
-              <div className="table-header-cell" onClick={() => handleSort('department')}>
-                Department
-                {sortBy === 'department' && <span>{sortOrder === 'asc' ? ' ↑' : ' ↓'}</span>}
-              </div>
-              <div className="table-header-cell" onClick={() => handleSort('position')}>
-                Position
-                {sortBy === 'position' && <span>{sortOrder === 'asc' ? ' ↑' : ' ↓'}</span>}
-              </div>
-              <div className="table-header-cell" onClick={() => handleSort('employee_id')}>
-                Employee ID
-                {sortBy === 'employee_id' && <span>{sortOrder === 'asc' ? ' ↑' : ' ↓'}</span>}
-              </div>
-              <div className="table-header-cell" onClick={() => handleSort('date_created')}>
-                Date Created
-                {sortBy === 'date_created' && <span>{sortOrder === 'asc' ? ' ↑' : ' ↓'}</span>}
-              </div>
+              <div className="table-header-cell">Employee Name</div>
+              <div className="table-header-cell">Department</div>
+              <div className="table-header-cell">Position</div>
+              <div className="table-header-cell">Employee ID</div>
+              <div className="table-header-cell">Date Created</div>
               <div className="table-header-cell">Actions</div>
             </div>
 

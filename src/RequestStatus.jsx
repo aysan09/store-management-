@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import "./styles.css";
+import SortDropdown from './components/SortDropdown';
+import ExpandableSearch from './components/ExpandableSearch';
 
 export default function RequestStatus({ onBack, requests: propsRequests }) {
   const [requests, setRequests] = useState([]);
@@ -151,15 +153,25 @@ export default function RequestStatus({ onBack, requests: propsRequests }) {
 
       <div className="status-container">
         <div className="status-search-section">
-          <div className="search-box">
-            <input
-              type="text"
-              className="search-input"
-              placeholder="Search by employee, item, or status..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+          <ExpandableSearch
+            placeholder="Search by employee, item, or status..."
+            value={searchTerm}
+            onChange={setSearchTerm}
+          />
+          <div className="sort-controls">
+            <SortDropdown
+              options={[
+                { value: 'employee', label: 'Employee' },
+                { value: 'item', label: 'Item' },
+                { value: 'brand', label: 'Brand' },
+                { value: 'quantity', label: 'Quantity' },
+                { value: 'date', label: 'Date' },
+                { value: 'status', label: 'Status' }
+              ]}
+              value={sortBy}
+              order={sortOrder}
+              onChange={handleSort}
             />
-            <span className="search-icon">🔍</span>
           </div>
         </div>
 
@@ -174,87 +186,39 @@ export default function RequestStatus({ onBack, requests: propsRequests }) {
         ) : (
           <div className="status-table-container">
             <div className="status-table-header">
-              <div 
-                className="table-header-cell"
-                onClick={() => handleSort('employee')}
-              >
-                Employee
-                {sortBy === 'employee' && (
-                  <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>
-                )}
-              </div>
-              <div 
-                className="table-header-cell"
-                onClick={() => handleSort('item')}
-              >
-                Item Name
-                {sortBy === 'item' && (
-                  <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>
-                )}
-              </div>
-              <div 
-                className="table-header-cell"
-                onClick={() => handleSort('brand')}
-              >
-                Brand
-                {sortBy === 'brand' && (
-                  <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>
-                )}
-              </div>
-              <div 
-                className="table-header-cell"
-                onClick={() => handleSort('quantity')}
-              >
-                Quantity
-                {sortBy === 'quantity' && (
-                  <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>
-                )}
-              </div>
+              <div className="table-header-cell">Employee</div>
+              <div className="table-header-cell">Item Name</div>
+              <div className="table-header-cell">Brand</div>
+              <div className="table-header-cell">Quantity</div>
                <div>Purpose</div>
-              <div 
-                className="table-header-cell"
-                onClick={() => handleSort('date')}
-              >
-                Date
-                {sortBy === 'date' && (
-                  <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>
-                )}
-              </div>
-              <div 
-                className="table-header-cell"
-                onClick={() => handleSort('status')}
-              >
-                Status
-                {sortBy === 'status' && (
-                  <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>
-                )}
-              </div>
+              <div className="table-header-cell">Date</div>
+              <div className="table-header-cell">Status</div>
              
             </div>
 
             {filteredRequests.map((req, index) => (
               <div className="status-table-row" key={index}>
-                <div className="employee-cell">
+                <div className="employee-cell" data-label="Employee">
                   <div className="employee-info">
                     <div className="employee-name">{req.employeeName}</div>
          
                   </div>
                 </div>
-                <div className="item-cell">
+                <div className="item-cell" data-label="Item Name">
                   <div className="item-name">{req.itemName}</div>
                 </div>
-                <div className="brand-cell">
+                <div className="brand-cell" data-label="Brand">
                   <div className="item-brand">{req.itemBrand }</div>
                 </div>
-                <div className="quantity-cell">
+                <div className="quantity-cell" data-label="Quantity">
                   <span className="quantity-badge">{req.quantity}</span>
                 </div>
-                 <div className="purpose-cell">
+                 <div className="purpose-cell" data-label="Purpose">
                   <div className="purpose-content" title={req.purpose}>
                     {req.purpose}
                   </div>
                 </div>
-                <div className="date-cell">
+                <div className="date-cell" data-label="Date">
                   <div className="date-info">
                     <div className="date-added">
                       {req.dateAdded ? new Date(req.dateAdded).toLocaleDateString() : 'N/A'}
@@ -263,7 +227,7 @@ export default function RequestStatus({ onBack, requests: propsRequests }) {
                   </div>
                 </div>
                 
-                <div className="status-cell">
+                <div className="status-cell" data-label="Status">
                   <span className={`status-badge ${getStatusClass(req.status)}`}>
                     {getStatusIcon(req.status)} {req.status}
                   </span>

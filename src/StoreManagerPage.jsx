@@ -10,6 +10,8 @@ import {
 import './styles/store-manager-styles.css';
 import './styles/enhanced-modals-styles.css';
 import './styles/enhanced-store-manager-styles.css';
+import SortDropdown from './components/SortDropdown';
+import ExpandableSearch from './components/ExpandableSearch';
 
 export default function StoreManagerPage({ 
   onBack, inventory, setInventory, onAddItem, approvedRequests, onMarkFinished, onViewFinished 
@@ -636,16 +638,27 @@ export default function StoreManagerPage({
         />
       </section>
 
-      {/* Search */}
-      <div className="search-container">
-        <Search className="search-icon-pos" size={20} />
-        <input 
-          type="text" 
-          placeholder="Search products, brand, or category" 
-          className="search-input"
+      {/* Search and sort */}
+      <div className="store-manager-search-sort">
+        <ExpandableSearch
+          className="search-container"
+          placeholder="Search products, brand, or category"
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={setSearchTerm}
         />
+        <div className="sort-controls store-manager-sort-controls">
+          <SortDropdown
+            options={[
+              { value: 'model', label: 'Model' },
+              { value: 'brand', label: 'Brand' },
+              { value: 'category', label: 'Category' },
+              { value: 'quantity', label: 'Quantity' }
+            ]}
+            value={sortBy}
+            order={sortOrder}
+            onChange={handleSort}
+          />
+        </div>
       </div>
 
       {/* Table */}
@@ -654,18 +667,10 @@ export default function StoreManagerPage({
           <thead>
             <tr>
               <th>Photo</th>
-              <th onClick={() => handleSort('model')} style={{ cursor: 'pointer' }}>
-                Model {getSortIcon('model')}
-              </th>
-              <th onClick={() => handleSort('brand')} style={{ cursor: 'pointer' }}>
-                Brand {getSortIcon('brand')}
-              </th>
-              <th onClick={() => handleSort('category')} style={{ cursor: 'pointer' }}>
-                Category {getSortIcon('category')}
-              </th>
-              <th onClick={() => handleSort('quantity')} style={{ cursor: 'pointer' }}>
-                Quantity {getSortIcon('quantity')}
-              </th>
+              <th>Model</th>
+              <th>Brand</th>
+              <th>Category</th>
+              <th>Quantity</th>
               <th>Status</th>
               <th className="text-center">Actions</th>
             </tr>
@@ -684,9 +689,9 @@ export default function StoreManagerPage({
                   <td className="model-cell">{item.model}</td>
                   <td className="brand-cell">{item.brand}</td>
                   <td>{item.category || 'General'}</td>
-                  <td>{item.quantity}</td>
+                    <td>{Number(item.quantity) || 0}</td>
                   <td>
-                    <StatusBadge quantity={item.quantity} />
+                      <StatusBadge quantity={Number(item.quantity) || 0} />
                   </td>
                   <td>
                     <div className="action-btns">
@@ -853,11 +858,13 @@ export default function StoreManagerPage({
                               }
                               
                               // Use the current quantity from the server
-                              const currentQuantity = serverItem.quantity;
-                              const hasSufficientStock = currentQuantity >= request.quantity;
+                              const currentQuantity = Number(serverItem.quantity) || 0;
+                              const requestedQuantity = Number(request.quantity) || 0;
+                              const hasSufficientStock = currentQuantity >= requestedQuantity;
                               
                               setItemToFinish({
                                 ...request,
+                                quantity: requestedQuantity,
                                 itemInInventory: serverItem,
                                 hasSufficientStock
                               });
@@ -1009,7 +1016,7 @@ export default function StoreManagerPage({
           <div className="message-popup">
             <div className="message-icon">
               {messageContent.type === 'success' ? (
-                <CheckCircle size={48} color="#10b981" />
+                <CheckCircle size={48} color="#7FE7D6" />
               ) : (
                 <AlertTriangle size={48} color="#ef4444" />
               )}
@@ -1060,7 +1067,7 @@ export default function StoreManagerPage({
                   <span className="detail-value">{itemToFinish.itemBrand || 'N/A'}</span>
                 </div>
                 <div className="detail-row">
-                  <span className="detail-label">Quantity:</span>
+                  <span className="detail-label">Requested Quantity:</span>
                   <span className="detail-value">{itemToFinish.quantity}</span>
                 </div>
                 <div className="detail-row">
@@ -1079,8 +1086,8 @@ export default function StoreManagerPage({
                   </div>
                   <div className="inventory-details">
                     <div className="inventory-row">
-                      <span className="inventory-label">Current Stock:</span>
-                      <span className="inventory-value">{itemToFinish.itemInInventory.quantity}</span>
+                      <span className="inventory-label">Available Stock:</span>
+                      <span className="inventory-value">{Number(itemToFinish.itemInInventory.quantity) || 0}</span>
                     </div>
                     <div className="inventory-row">
                       <span className="inventory-label">Required:</span>
@@ -1089,7 +1096,7 @@ export default function StoreManagerPage({
                     <div className="inventory-row">
                       <span className="inventory-label">Remaining After:</span>
                       <span className="inventory-value">
-                        {itemToFinish.hasSufficientStock ? (itemToFinish.itemInInventory.quantity - itemToFinish.quantity) : '0'}
+                        {itemToFinish.hasSufficientStock ? ((Number(itemToFinish.itemInInventory.quantity) || 0) - itemToFinish.quantity) : '0'}
                       </span>
                     </div>
                   </div>
@@ -1226,11 +1233,11 @@ export default function StoreManagerPage({
 function StatCard({ icon, label, value, type }) {
   // Determine background color based on stat type
   let bgColor = '#eff6ff'; // Default blue
-  let iconColor = '#2563eb'; // Default blue
+  let iconColor = '#3ba7f2'; // Default blue
   
   if (type === 'in-stock') {
     bgColor = '#ecfdf5';
-    iconColor = '#059669';
+    iconColor = '#3ba7f2';
   } else if (type === 'low-stock') {
     bgColor = '#fffbeb';
     iconColor = '#d97706';

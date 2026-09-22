@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import './styles.css';
 import { notifySuccess, notifyError, notifyInfo } from './utils/toastUtils';
+import SortDropdown from './components/SortDropdown';
+import ExpandableSearch from './components/ExpandableSearch';
 
 export default function FinishedRequests({ onBack, finishedRequests }) {
   // Use the finishedRequests passed as props instead of fetching separately
@@ -156,15 +158,26 @@ export default function FinishedRequests({ onBack, finishedRequests }) {
 
       <div className="status-container">
         <div className="status-search-section">
-          <div className="search-box">
-            <input
-              type="text"
-              className="search-input"
-              placeholder="Search by employee, item, or status..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+          <ExpandableSearch
+            placeholder="Search by employee, item, or status..."
+            value={searchTerm}
+            onChange={setSearchTerm}
+          />
+          <div className="sort-controls">
+            <SortDropdown
+              options={[
+                { value: 'employee', label: 'Employee' },
+                { value: 'item', label: 'Item' },
+                { value: 'brand', label: 'Brand' },
+                { value: 'quantity', label: 'Quantity' },
+                { value: 'dateAdded', label: 'Date Added' },
+                { value: 'dateApproved', label: 'Date Approved' },
+                { value: 'dateFinished', label: 'Date Finished' }
+              ]}
+              value={sortBy}
+              order={sortOrder}
+              onChange={handleSort}
             />
-            <span className="search-icon">🔍</span>
           </div>
         </div>
 
@@ -179,119 +192,63 @@ export default function FinishedRequests({ onBack, finishedRequests }) {
         ) : (
           <div className="status-table-container">
             <div className="status-table-header">
-              <div 
-                className="table-header-cell"
-                onClick={() => handleSort('employee')}
-              >
-                Employee
-                {sortBy === 'employee' && (
-                  <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>
-                )}
-              </div>
-              <div 
-                className="table-header-cell"
-                onClick={() => handleSort('item')}
-              >
-                Item
-                {sortBy === 'item' && (
-                  <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>
-                )}
-              </div>
-              <div 
-                className="table-header-cell"
-                onClick={() => handleSort('brand')}
-              >
-                Brand
-                {sortBy === 'brand' && (
-                  <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>
-                )}
-              </div>
-              <div 
-                className="table-header-cell"
-                onClick={() => handleSort('quantity')}
-              >
-                Qty
-                {sortBy === 'quantity' && (
-                  <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>
-                )}
-              </div>
-              <div 
-                className="table-header-cell"
-                onClick={() => handleSort('dateAdded')}
-              >
-                Date Added
-                {sortBy === 'dateAdded' && (
-                  <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>
-                )}
-              </div>
-              <div 
-                className="table-header-cell"
-                onClick={() => handleSort('dateApproved')}
-              >
-                Date Approved
-                {sortBy === 'dateApproved' && (
-                  <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>
-                )}
-              </div>
-              <div 
-                className="table-header-cell"
-                onClick={() => handleSort('dateFinished')}
-              >
-                Date Finished
-                {sortBy === 'dateFinished' && (
-                  <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>
-                )}
-              </div>
+              <div className="table-header-cell">Employee</div>
+              <div className="table-header-cell">Item</div>
+              <div className="table-header-cell">Brand</div>
+              <div className="table-header-cell">Qty</div>
+              <div className="table-header-cell">Date Added</div>
+              <div className="table-header-cell">Date Approved</div>
+              <div className="table-header-cell">Date Finished</div>
               <div>Purpose</div>
               <div>Status</div>
             </div>
 
             {filteredRequests.map((req, index) => (
               <div className="status-table-row" key={index}>
-                <div className="employee-cell">
+                <div className="employee-cell" data-label="Employee">
                   <div className="employee-info">
                     <div className="employee-name">{req.employeeName}</div>
                     <div className="employee-id">ID: {req.employeeId || 'N/A'}</div>
                   </div>
                 </div>
-                <div className="item-cell">
+                <div className="item-cell" data-label="Item">
                   <div className="item-info">
                     <div className="item-name">{req.itemName}</div>
                   </div>
                 </div>
-                <div className="brand-cell">
+                <div className="brand-cell" data-label="Brand">
                   {req.itemBrand}
                 </div>
-                <div className="quantity-cell">
+                <div className="quantity-cell" data-label="Quantity">
                   <span className="quantity-badge">{req.quantity}</span>
                 </div>
-                <div className="date-cell">
+                <div className="date-cell" data-label="Date Added">
                   <div className="date-info">
                     <div className="date-added">
                       {(req.dateAdded)}
                     </div>
                   </div>
                 </div>
-                <div className="date-cell">
+                <div className="date-cell" data-label="Date Approved">
                   <div className="date-info">
                     <div className="date-added">
                       {(req.dateApproved)}
                     </div>
                   </div>
                 </div>
-                <div className="date-cell">
+                <div className="date-cell" data-label="Date Finished">
                   <div className="date-info">
                     <div className="date-added">
                       {(req.dateFinished)}
                     </div>
                   </div>
                 </div>
-                <div className="purpose-cell">
+                <div className="purpose-cell" data-label="Purpose">
                   <div className="purpose-content" title={req.purpose}>
                     {req.purpose}
                   </div>
                 </div>
-                <div className="status-cell">
+                <div className="status-cell" data-label="Status">
                   <span className="status-badge finished">
                     ✅ Approved & Finished
                   </span>

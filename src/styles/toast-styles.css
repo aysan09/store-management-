@@ -57,7 +57,7 @@
 }
 
 .Toastify__toast--info {
-  border-left: 4px solid #3b82f6;
+  border-left: 4px solid #3ba7f2;
   background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
 }
 
@@ -88,7 +88,7 @@
 }
 
 .Toastify__progress-bar {
-  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+  background: linear-gradient(90deg, #3ba7f2, #8b5cf6);
   height: 4px;
   border-radius: 0 0 8px 8px;
 }

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { ToastContainer } from 'react-toastify';
 import { notifySuccess, notifyError, notifyWarning } from './utils/toastUtils';
 import { Menu, X as CloseIcon, Download } from 'lucide-react';
+import SortDropdown from './components/SortDropdown';
+import ExpandableSearch from './components/ExpandableSearch';
 import 'react-toastify/dist/ReactToastify.css';
 import './styles.css';
 
@@ -357,48 +359,24 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
         <div className="status-container">
           {/* Search and Filter Section */}
           <div className="hr-search-section">
-            <div className="search-box">
-              <input
-                type="text"
-                placeholder="Search by employee, item, brand, or purpose..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="search-input"
-              />
-              <span className="search-icon">🔍</span>
-            </div>
+            <ExpandableSearch
+              placeholder="Search by employee, item, brand, or purpose..."
+              value={searchTerm}
+              onChange={setSearchTerm}
+            />
             <div className="sort-controls">
-              <span className="sort-label">Sort by:</span>
-              <button 
-                className={`sort-btn ${sortBy === 'employee' ? 'active' : ''}`}
-                onClick={() => handleSort('employee')}
-              >
-                Employee {sortBy === 'employee' && (sortOrder === 'asc' ? '↑' : '↓')}
-              </button>
-              <button 
-                className={`sort-btn ${sortBy === 'item' ? 'active' : ''}`}
-                onClick={() => handleSort('item')}
-              >
-                Item {sortBy === 'item' && (sortOrder === 'asc' ? '↑' : '↓')}
-              </button>
-              <button 
-                className={`sort-btn ${sortBy === 'brand' ? 'active' : ''}`}
-                onClick={() => handleSort('brand')}
-              >
-                Brand {sortBy === 'brand' && (sortOrder === 'asc' ? '↑' : '↓')}
-              </button>
-              <button 
-                className={`sort-btn ${sortBy === 'date' ? 'active' : ''}`}
-                onClick={() => handleSort('date')}
-              >
-                Date {sortBy === 'date' && (sortOrder === 'asc' ? '↑' : '↓')}
-              </button>
-              <button 
-                className={`sort-btn ${sortBy === 'quantity' ? 'active' : ''}`}
-                onClick={() => handleSort('quantity')}
-              >
-                Quantity {sortBy === 'quantity' && (sortOrder === 'asc' ? '↑' : '↓')}
-              </button>
+              <SortDropdown
+                options={[
+                  { value: 'employee', label: 'Employee' },
+                  { value: 'item', label: 'Item' },
+                  { value: 'brand', label: 'Brand' },
+                  { value: 'date', label: 'Date' },
+                  { value: 'quantity', label: 'Quantity' }
+                ]}
+                value={sortBy}
+                order={sortOrder}
+                onChange={handleSort}
+              />
             </div>
           </div>
 
@@ -463,7 +441,7 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
           {sortedRequests.length > 0 ? (
             sortedRequests.map((req, index) => (
               <div className={`hr-table-row ${req.isOutOfStockNotification ? 'out-of-stock-notification-row' : ''}`} key={req.id || index}>
-                <div className="table-cell checkbox-cell">
+                <div className="table-cell checkbox-cell" data-label="Select">
                   <input
                     type="checkbox"
                     checked={selectedRequests.has(req.id)}
@@ -471,37 +449,37 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
                     className="select-checkbox"
                   />
                 </div>
-                <div className="table-cell employee-cell">
+                <div className="table-cell employee-cell" data-label="Employee">
                   <div className="employee-info">
                     <div className="employee-name">{req.employeeName}</div>
                     <div className="employee-id">ID: {req.employeeId || 'N/A'}</div>
                   </div>
                 </div>
-                <div className="table-cell item-cell">
+                <div className="table-cell item-cell" data-label="Item">
                   <div className="item-info">
                     <div className="item-name">{req.itemName}</div>
                   </div>
                 </div>
-                <div className="table-cell brand-cell">
+                <div className="table-cell brand-cell" data-label="Brand">
                   {req.itemBrand || 'N/A'}
                 </div>
-                <div className="table-cell quantity-cell">
+                <div className="table-cell quantity-cell" data-label="Quantity">
                   <span className={`quantity-badge ${req.isOutOfStockNotification ? 'out-of-stock-badge' : ''}`}>
                     {req.isOutOfStockNotification ? '⚠️ Out of Stock' : req.quantity}
                   </span>
                 </div>
-                <div className="table-cell date-cell">
+                <div className="table-cell date-cell" data-label="Date">
                   <div className="date-info">
                     <span className="date-added">{req.dateAdded || req.dateRequested || 'N/A'}</span>
                     <span className="date-time">{new Date(req.dateAdded || req.dateRequested || Date.now()).toLocaleTimeString()}</span>
                   </div>
                 </div>
-                <div className="table-cell purpose-cell">
+                <div className="table-cell purpose-cell" data-label="Purpose">
                   <div className="purpose-content" title={req.purpose}>
                     {req.purpose}
                   </div>
                 </div>
-                <div className="table-cell action-cell">
+                <div className="table-cell action-cell" data-label="Action">
                   <div className="hr-actions">
                     <button 
                       className={`approve-btn ${req.isOutOfStockNotification ? 'out-of-stock-approve-btn' : ''}`} 

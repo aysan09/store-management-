@@ -283,6 +283,7 @@ export default function HeroPage({ onLoginClick, onAboutClick }) {
       <main className="hero">
         <div className="hero-left">
           <h1 className="title">Vascom Store<br/>Management<br/>System</h1>
+          <p className="hero-subtitle">Effortless inventory &amp; request management.</p>
           <button className="cta" onClick={scrollToAbout}>About us</button>
         </div>
       <div className="hero-right">
@@ -300,10 +301,10 @@ export default function HeroPage({ onLoginClick, onAboutClick }) {
               <div className="charts-container">
                 <div className="bar-chart-section">
                   <div className="bar-graph">
-                    <div className="bar" style={{ '--height': '65%', '--color': '#3b82f6', '--delay': '0.1s' }}>
+                    <div className="bar" style={{ '--height': '65%', '--color': '#3ba7f2', '--delay': '0.1s' }}>
                       <span className="bar-value">65%</span>
                     </div>
-                    <div className="bar" style={{ '--height': '85%', '--color': '#10b981', '--delay': '0.3s' }}>
+                    <div className="bar" style={{ '--height': '85%', '--color': '#7FE7D6', '--delay': '0.3s' }}>
                       <span className="bar-value">85%</span>
                     </div>
                     <div className="bar" style={{ '--height': '45%', '--color': '#f97316', '--delay': '0.5s' }}>
@@ -332,9 +333,9 @@ export default function HeroPage({ onLoginClick, onAboutClick }) {
                   <div className="pie-chart">
                     <svg viewBox="0 0 120 120" className="pie-svg">
                       <circle cx="60" cy="60" r="50" fill="none" stroke="#e5e7eb" strokeWidth="20" />
-                      <circle cx="60" cy="60" r="50" fill="none" stroke="#3b82f6" strokeWidth="20"
+                      <circle cx="60" cy="60" r="50" fill="none" stroke="#3ba7f2" strokeWidth="20"
                         strokeDasharray="78.5 314" strokeDashoffset="0" className="pie-slice" />
-                      <circle cx="60" cy="60" r="50" fill="none" stroke="#10b981" strokeWidth="20"
+                      <circle cx="60" cy="60" r="50" fill="none" stroke="#7FE7D6" strokeWidth="20"
                         strokeDasharray="62.8 314" strokeDashoffset="-78.5" className="pie-slice" />
                       <circle cx="60" cy="60" r="50" fill="none" stroke="#f97316" strokeWidth="20"
                         strokeDasharray="47.1 314" strokeDashoffset="-141.3" className="pie-slice" />
@@ -348,8 +349,8 @@ export default function HeroPage({ onLoginClick, onAboutClick }) {
                     </div>
                   </div>
                   <div className="pie-legend">
-                    <div className="legend-item"><span className="legend-color" style={{ background: '#3b82f6' }}></span>Store A 25%</div>
-                    <div className="legend-item"><span className="legend-color" style={{ background: '#10b981' }}></span>Store B 20%</div>
+                    <div className="legend-item"><span className="legend-color" style={{ background: '#3ba7f2' }}></span>Store A 25%</div>
+                    <div className="legend-item"><span className="legend-color" style={{ background: '#7FE7D6' }}></span>Store B 20%</div>
                     <div className="legend-item"><span className="legend-color" style={{ background: '#f97316' }}></span>Online 15%</div>
                     <div className="legend-item"><span className="legend-color" style={{ background: '#8b5cf6' }}></span>Other 10%</div>
                     <div className="legend-item"><span className="legend-color" style={{ background: '#06b6d4' }}></span>New 30%</div>
@@ -408,7 +409,7 @@ export default function HeroPage({ onLoginClick, onAboutClick }) {
           <div className="mission-grid">
             <div className="mission-card">
               <div className="card-icon">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#1e40af" strokeWidth="2">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#0b3D91" strokeWidth="2">
                   <path d="M12 2L2 7l10 5 10-5-10-5z" />
                   <path d="M2 17l10 5 10-5" />
                   <path d="M2 12l10 5 10-5" />
@@ -422,7 +423,7 @@ export default function HeroPage({ onLoginClick, onAboutClick }) {
             </div>
             <div className="mission-card">
               <div className="card-icon">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#1e40af" strokeWidth="2">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#0b3D91" strokeWidth="2">
                   <circle cx="12" cy="12" r="10" />
                   <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
                   <line x1="8" y1="21" x2="8" y2="21" />
@@ -436,7 +437,7 @@ export default function HeroPage({ onLoginClick, onAboutClick }) {
             </div>
             <div className="mission-card">
               <div className="card-icon">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#1e40af" strokeWidth="2">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#0b3D91" strokeWidth="2">
                   <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                 </svg>
               </div>
@@ -465,7 +466,7 @@ export default function HeroPage({ onLoginClick, onAboutClick }) {
             {/* Feature 1 */}
             <div className="feature-card">
               <div className="feature-icon">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#1e40af" strokeWidth="2">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#0b3D91" strokeWidth="2">
                   <rect x="4" y="5" width="16" height="14" />
                   <line x1="4" y1="9" x2="20" y2="9" />
                   <line x1="4" y1="13" x2="20" y2="13" />
@@ -484,7 +485,7 @@ export default function HeroPage({ onLoginClick, onAboutClick }) {
             {/* Feature 2 */}
             <div className="feature-card">
               <div className="feature-icon">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#1e40af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#0b3D91" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 2L2 7l10 5 10-5-10-5z" />
                   <path d="M2 17l10 5 10-5" />
                   <path d="M2 12l10 5 10-5" />
@@ -502,7 +503,7 @@ export default function HeroPage({ onLoginClick, onAboutClick }) {
             {/* Feature 3 */}
             <div className="feature-card">
               <div className="feature-icon">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="#1e40af">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="#0b3D91">
                   <circle cx="12" cy="8" r="4" />
                   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                 </svg>
@@ -519,7 +520,7 @@ export default function HeroPage({ onLoginClick, onAboutClick }) {
             {/* Feature 4 */}
             <div className="feature-card">
               <div className="feature-icon">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#1e40af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#0b3D91" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M3 3v18h18" />
                   <path d="M18 9l-5 5-2-2-4 4" />
                 </svg>
@@ -536,7 +537,7 @@ export default function HeroPage({ onLoginClick, onAboutClick }) {
             {/* Feature 5 */}
             <div className="feature-card">
               <div className="feature-icon">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#1e40af" strokeWidth="2">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#0b3D91" strokeWidth="2">
                   <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
                   <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
                   <line x1="12" y1="22.08" x2="12" y2="12" />
@@ -554,7 +555,7 @@ export default function HeroPage({ onLoginClick, onAboutClick }) {
             {/* Feature 6 */}
             <div className="feature-card">
               <div className="feature-icon">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#1e40af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#0b3D91" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="3" />
                   <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
                 </svg>
@@ -577,7 +578,7 @@ export default function HeroPage({ onLoginClick, onAboutClick }) {
           <div className="stats-grid">
             <div className="stat-card">
               <div className="stat-icon">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#1e40af" strokeWidth="2">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0b3D91" strokeWidth="2">
                   <rect x="4" y="5" width="16" height="14" />
                   <line x1="4" y1="9" x2="20" y2="9" />
                   <line x1="4" y1="13" x2="20" y2="13" />
@@ -591,7 +592,7 @@ export default function HeroPage({ onLoginClick, onAboutClick }) {
             </div>
             <div className="stat-card">
               <div className="stat-icon">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="#1e40af">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="#0b3D91">
                   <circle cx="12" cy="8" r="4" />
                   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                 </svg>
@@ -603,7 +604,7 @@ export default function HeroPage({ onLoginClick, onAboutClick }) {
             </div>
             <div className="stat-card">
               <div className="stat-icon">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#1e40af" strokeWidth="2">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0b3D91" strokeWidth="2">
                   <circle cx="12" cy="12" r="10" />
                   <polyline points="12 2 12 12 16 16" />
                 </svg>
@@ -615,7 +616,7 @@ export default function HeroPage({ onLoginClick, onAboutClick }) {
             </div>
             <div className="stat-card">
               <div className="stat-icon">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#1e40af" strokeWidth="2">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0b3D91" strokeWidth="2">
                   <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
                 </svg>
               </div>
