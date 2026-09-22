@@ -190,23 +190,19 @@ export default function StoreManagerPage({
     }
   };
 
-  // Handle request stock for out-of-stock items
+  // Only the Store Manager can notify HR about low or exhausted stock.
   const handleRequestStock = async (item) => {
     try {
-      // Call onAddItem to open the request form
-      if (onAddItem) {
-        onAddItem(item);
-      }
-
-      // Send notification to HR
+      const isOutOfStock = Number(item.quantity) === 0;
+      const stockLevel = isOutOfStock ? 'Out of Stock' : 'Low Stock';
       const response = await fetch('/api/notifications', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          message: `Low Stock Alert: ${item.brand} ${item.model} is out of stock.`,
-          type: 'stock_alert',
+          message: `${stockLevel} Alert: ${item.brand} ${item.model} has ${item.quantity} item(s) remaining.`,
+          type: isOutOfStock ? 'out-of-stock' : 'low-stock',
           itemId: item.id,
           itemName: `${item.brand} ${item.model}`
         })
@@ -215,7 +211,8 @@ export default function StoreManagerPage({
       const result = await response.json();
       
       if (result.success) {
-        addToast('info', 'HR has been notified of the stock shortage');
+        setNotificationSent(prev => new Set(prev).add(item.id));
+        addToast('info', `HR has been notified about ${item.model}.`);
       } else {
         addToast('warning', 'Failed to notify HR. Please try again.');
       }
@@ -711,6 +708,17 @@ export default function StoreManagerPage({
                       >
                         <Trash2 size={14}/>
                       </button>
+                      {Number(item.quantity) <= 5 && (
+                        <button
+                          className="btn-request"
+                          onClick={() => handleRequestStock(item)}
+                          disabled={notificationSent.has(item.id)}
+                          title="Notify HR about this stock level"
+                        >
+                          <Bell size={14} />
+                          {notificationSent.has(item.id) ? 'HR Notified' : 'Notify HR'}
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -1170,11 +1178,6 @@ export default function StoreManagerPage({
                       // Close modal
                       setShowFinishConfirm(false);
                       setItemToFinish(null);
-                      
-                      // Refresh the approved requests list by calling onMarkFinished
-                      if (onMarkFinished) {
-                        onMarkFinished(itemToFinish.employeeName, itemToFinish.itemName, itemToFinish.quantity);
-                      }
                       
                       // Refresh the approved requests list
                       fetchApprovedRequests();

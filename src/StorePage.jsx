@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { getImageUrl } from "./config";
-import { notifyWarning, notifySuccess, notifyError } from "./utils/toastUtils";
 import Header from "./components/Header";
 import ExpandableSearch from './components/ExpandableSearch';
 import { LogOut } from 'lucide-react';
@@ -47,26 +46,6 @@ export default function StorePage({ onBack, onRequest, items, isManager = false,
   const handleRequestItem = () => {
     if (!onRequest) return;
     onRequest(selectedItem || undefined);
-  };
-
-  const handleNotifyOutOfStock = async () => {
-    if (!selectedItem) return;
-
-    setOutOfStockNoticeStatus('sending');
-    try {
-      const response = await fetch(`/api/items/${selectedItem.id}/notify-hr`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-
-      if (!response.ok) throw new Error('Server error');
-      setOutOfStockNoticeStatus('success');
-      notifySuccess(`HR was notified about ${selectedItem.model}.`);
-    } catch (error) {
-      console.error('Failed to notify HR:', error);
-      setOutOfStockNoticeStatus('error');
-      notifyError('Failed to notify HR. Please try again.');
-    }
   };
 
   const handleMakeRequest = () => {
@@ -197,41 +176,6 @@ export default function StorePage({ onBack, onRequest, items, isManager = false,
         </table>
       </div>
 
-      {/* Selected Item Info */}
-      {selectedItem && (
-        <div className="selected-item-info">
-          <div className="selected-item-heading">
-            <span className="selected-item-eyebrow">Selected product</span>
-            <h3>Product details</h3>
-          </div>
-          <div className="selected-item-details">
-            <div className="product-detail-row">
-              <span className="product-detail-label">Model</span>
-              <strong>{selectedItem.model}</strong>
-            </div>
-            <div className="product-detail-row">
-              <span className="product-detail-label">Brand</span>
-              <strong>{selectedItem.brand}</strong>
-            </div>
-            <div className="product-detail-row">
-              <span className="product-detail-label">Category</span>
-              <strong>{selectedItem.category || 'General'}</strong>
-            </div>
-            <div className="product-detail-row">
-              <span className="product-detail-label">Available quantity</span>
-              <strong>{selectedItem.quantity}</strong>
-            </div>
-          </div>
-          <div className="selected-item-actions">
-            {!isManager && (
-              <button className="btn-request" onClick={handleMakeRequest}>
-                Request This Item
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
       {showOutOfStockNotice && selectedItem && (
         <div className="modal-overlay" onClick={() => setShowOutOfStockNotice(false)}>
           <div className="modal-content out-of-stock-notice" onClick={(event) => event.stopPropagation()}>
@@ -239,25 +183,12 @@ export default function StorePage({ onBack, onRequest, items, isManager = false,
               <div className="modal-icon">⚠️</div>
               <h3>Item out of stock</h3>
               <p className="modal-subtitle">
-                {selectedItem.model} is currently unavailable. You cannot submit a request for zero stock.
+                {selectedItem.model} is currently unavailable. Please contact the Store Manager.
               </p>
             </div>
-            {outOfStockNoticeStatus === 'success' && (
-              <p className="out-of-stock-success">HR has been notified to reorder this item.</p>
-            )}
-            {outOfStockNoticeStatus === 'error' && (
-              <p className="out-of-stock-error">Notification failed. Please try again.</p>
-            )}
             <div className="modal-actions">
               <button className="btn-edit-del" onClick={() => setShowOutOfStockNotice(false)}>
                 Close
-              </button>
-              <button
-                className="btn-request"
-                onClick={handleNotifyOutOfStock}
-                disabled={outOfStockNoticeStatus === 'sending' || outOfStockNoticeStatus === 'success'}
-              >
-                {outOfStockNoticeStatus === 'sending' ? 'Notifying...' : outOfStockNoticeStatus === 'success' ? 'Notified' : 'Notify HR'}
               </button>
             </div>
           </div>

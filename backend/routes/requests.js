@@ -240,12 +240,6 @@ router.post('/', validateRequest, async (req, res) => {
       [employeeName, itemName, itemBrand, quantity, purpose || null, 'Pending']
     );
 
-    // Update item quantity (reserve stock)
-    await connection.execute(
-      'UPDATE items SET quantity = quantity - ? WHERE id = ?',
-      [quantity, item_id]
-    );
-
     await connection.commit();
 
     // Get the created request
@@ -467,20 +461,11 @@ router.put('/:id/finish', validateId('id'), async (req, res) => {
       });
     }
 
-    // Update request status to finished
-    await connection.execute(
-      `UPDATE requests 
-       SET status = 'finished', 
-           date_finished = NOW(),
-           updated_at = NOW()
-       WHERE id = ?`,
-      [requestId]
-    );
-
-    // Deduct the quantity from inventory (item is being given to employee)
-    // First, get the item_id from the items table using model and brand
+    // Deduct stock only when the store manager completes the handover.
+    // Lock the item row and use a conditional update so concurrent finishes
+    // cannot reduce the quantity below zero.
     const [itemRows] = await connection.execute(
-      'SELECT id FROM items WHERE model = ? AND brand = ?',
+      'SELECT id, quantity FROM items WHERE model = ? AND brand = ? FOR UPDATE',
       [request.item_name, request.item_brand]
     );
 
@@ -498,10 +483,31 @@ router.put('/:id/finish', validateId('id'), async (req, res) => {
 
     const itemId = itemRows[0].id;
 
-    // Now update the correct item's quantity
+    if (itemRows[0].quantity < request.quantity) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        error: {
+          message: `Insufficient stock. Available: ${itemRows[0].quantity}, Requested: ${request.quantity}`,
+          code: 'INSUFFICIENT_STOCK',
+          statusCode: 400
+        }
+      });
+    }
+
     await connection.execute(
-      'UPDATE items SET quantity = quantity - ? WHERE id = ?',
-      [request.quantity, itemId]
+      'UPDATE items SET quantity = quantity - ? WHERE id = ? AND quantity >= ?',
+      [request.quantity, itemId, request.quantity]
+    );
+
+    // Mark the request finished only after its stock has been deducted.
+    await connection.execute(
+      `UPDATE requests 
+       SET status = 'finished', 
+           date_finished = NOW(),
+           updated_at = NOW()
+       WHERE id = ?`,
+      [requestId]
     );
 
     await connection.commit();
@@ -606,33 +612,6 @@ router.put('/:id/reject', validateId('id'), async (req, res) => {
            updated_at = NOW()
        WHERE id = ?`,
       [requestId]
-    );
-
-    // Restore item quantity (release reserved stock)
-    // First, get the item_id from the items table using model and brand
-    const [itemRows] = await connection.execute(
-      'SELECT id FROM items WHERE model = ? AND brand = ?',
-      [request.item_name, request.item_brand]
-    );
-
-    if (itemRows.length === 0) {
-      await connection.rollback();
-      return res.status(404).json({
-        success: false,
-        error: {
-          message: 'Item not found in inventory',
-          code: 'ITEM_NOT_FOUND_INVENTORY',
-          statusCode: 404
-        }
-      });
-    }
-
-    const itemId = itemRows[0].id;
-
-    // Now restore the correct item's quantity
-    await connection.execute(
-      'UPDATE items SET quantity = quantity + ? WHERE id = ?',
-      [request.quantity, itemId]
     );
 
     await connection.commit();

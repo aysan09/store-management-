@@ -107,6 +107,9 @@ export default function App() {
   // Source of truth for inventory items
   const [inventory, setInventory] = useState([]);
 
+  // Item chosen from the employee inventory page for the next request.
+  const [requestedItemId, setRequestedItemId] = useState(null);
+
   // State to track requests submitted by employees
   const [requests, setRequests] = useState([]);
 
@@ -243,44 +246,20 @@ export default function App() {
       console.log('Response result:', result);
       
       if (result.success) {
-        // Update item quantity in database
-        const itemResponse = await fetch(`/api/items/${item.id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: item.model,
-            brand: item.brand,
-            category: item.category,
-            quantity: item.quantity - quantity
-          })
-        });
-
-        const itemResult = await itemResponse.json();
-        
-        if (itemResult.success) {
-          // Update local state
-          const currentDate = new Date().toISOString().split('T')[0];
-          
-          // Update requests state
-          setRequests(prev => prev.map(req => 
-            req.id === request.id 
-              ? { ...req, status: 'Finished', dateFinished: currentDate }
-              : req
-          ));
-          
-          // Update inventory state
-          setInventory(prev => prev.map(invItem => 
-            invItem.id === item.id 
-              ? { ...invItem, quantity: invItem.quantity - quantity }
-              : invItem
-          ));
-          
-          alert(`Request marked as finished successfully! ${quantity} ${itemName}(s) have been deducted from inventory.`);
-        } else {
-          alert('Request marked as finished, but failed to update inventory: ' + (itemResult.message || 'Unknown error'));
-        }
+        // The finish endpoint performs the single authoritative stock deduction.
+        // Update only the local view; do not send a second item update.
+        const currentDate = new Date().toISOString().split('T')[0];
+        setRequests(prev => prev.map(req => 
+          req.id === request.id
+            ? { ...req, status: 'Finished', dateFinished: currentDate }
+            : req
+        ));
+        setInventory(prev => prev.map(invItem =>
+          invItem.id === item.id
+            ? { ...invItem, quantity: invItem.quantity - quantity }
+            : invItem
+        ));
+        alert(`Request marked as finished successfully! ${quantity} ${itemName}(s) have been deducted from inventory.`);
       } else {
         alert('Error marking request as finished: ' + (result.message || 'Unknown error'));
       }
@@ -402,6 +381,7 @@ export default function App() {
   if (view === 'store') {
     const handleStoreRequest = (selectedItem) => {
       console.log('handleStoreRequest called with selectedItem:', selectedItem);
+      setRequestedItemId(selectedItem?.id ?? null);
       // Navigate to request form
       setView('request-form');
       // Update URL hash for navigation
@@ -472,6 +452,7 @@ export default function App() {
         onBack={() => setView('store')} 
         onViewStatus={() => setView('request-status')}
         items={inventory} 
+        preselectedItemId={requestedItemId}
         onAddRequest={(newRequest) => setRequests([...requests, newRequest])}
       />
     );

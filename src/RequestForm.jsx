@@ -6,20 +6,30 @@ import 'react-toastify/dist/ReactToastify.css';
 import './styles.css';
 import './styles/enhanced-request-form-styles.css';
 
-export default function RequestForm({ onBack, onViewStatus, items, onAddRequest, user }) {
-  const [selectedId, setSelectedId] = useState(items[0]?.id || "");
+export default function RequestForm({ onBack, onViewStatus, items, onAddRequest, user, preselectedItemId }) {
+  const [selectedId, setSelectedId] = useState(() => preselectedItemId ?? items[0]?.id ?? "");
   const [quantity, setQuantity] = useState(1);
   const [purpose, setPurpose] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
   const currentItem = items.find(item => String(item.id) === String(selectedId)) || items[0];
 
-  // Auto-select first item when items change
+  // Apply the item chosen from the inventory page immediately when this form opens.
   useEffect(() => {
-    if (items.length > 0 && !selectedId) {
+    const selectedItemIsAvailable = items.some(item => String(item.id) === String(preselectedItemId));
+
+    if (selectedItemIsAvailable) {
+      setSelectedId(preselectedItemId);
+      setQuantity(1);
+    } else if (items.length > 0 && !selectedId) {
       setSelectedId(items[0].id);
     }
-  }, [items, selectedId]);
+  }, [items, selectedId, preselectedItemId]);
+
+  // Keep the selected product first in the dropdown as a visual confirmation.
+  const requestItems = currentItem
+    ? [currentItem, ...items.filter(item => String(item.id) !== String(currentItem.id))]
+    : items;
 
   // Real-time validation
   useEffect(() => {
@@ -145,7 +155,7 @@ export default function RequestForm({ onBack, onViewStatus, items, onAddRequest,
                   className="request-select"
                   disabled={isSubmitting}
                 >
-                  {items.map(item => (
+                  {requestItems.map(item => (
                     <option key={item.id} value={item.id}>
                       {item.model} - {item.brand} ({item.quantity} available)
                     </option>
