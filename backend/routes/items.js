@@ -164,6 +164,50 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// @route   POST /api/items/:id/notify-hr
+// @desc    Notify HR that an item is out of stock
+// @access  Private
+router.post('/:id/notify-hr', async (req, res) => {
+  try {
+    const [rows] = await db.execute(
+      'SELECT * FROM items WHERE id = ?',
+      [req.params.id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Item not found'
+      });
+    }
+
+    const item = rows[0];
+    const message = `${item.model} (${item.brand}) is out of stock.`;
+
+    // Persist the notification so HR / the store manager can see it
+    try {
+      await db.execute(
+        'INSERT INTO notifications (message, type, item_id, item_name, employee_name, timestamp, read_status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [message, 'out-of-stock', item.id, item.model, null, new Date(), false]
+      );
+    } catch (dbError) {
+      console.warn('Failed to save out-of-stock notification:', dbError.message);
+    }
+
+    res.json({
+      success: true,
+      message: 'HR notified successfully',
+      data: { itemId: item.id, itemName: item.model }
+    });
+  } catch (error) {
+    console.error('Notify HR error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
 // @route   POST /api/items
 // @desc    Add new item
 // @access  Private

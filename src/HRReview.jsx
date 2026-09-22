@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ToastContainer } from 'react-toastify';
 import { notifySuccess, notifyError, notifyWarning } from './utils/toastUtils';
-import { Menu, X as CloseIcon, Download } from 'lucide-react';
+import { Menu, X as CloseIcon, Download, Bell } from 'lucide-react';
 import SortDropdown from './components/SortDropdown';
 import ExpandableSearch from './components/ExpandableSearch';
 import 'react-toastify/dist/ReactToastify.css';
@@ -18,13 +18,43 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  // Fetch notifications so HR sees them as soon as they log in, then poll periodically
+  // HR should only see stock-related alerts (out of stock / low stock), not approval notifications
+  const fetchNotifications = async () => {
+    try {
+      const response = await fetch('/api/notifications');
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          // Only show stock-related alerts to HR (out of stock / low stock),
+          // never approval notifications.
+          const stockTypes = ['out-of-stock', 'out_of_stock_alert', 'stock_alert', 'low-stock', 'low_stock_alert'];
+          const stockAlerts = (result.data || []).filter(n => stockTypes.includes(n.type));
+          setNotifications(stockAlerts);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const unreadCount = notifications.filter(n => !n.read && !n.read_status).length;
 
   const handleAction = async (employeeName, itemName, quantity, status) => {
     try {
       // Find the request to get its ID
-      const request = pendingRequests.find(req => 
-        req.employeeName === employeeName && 
-        req.itemName === itemName && 
+      const request = pendingRequests.find(req =>
+        req.employeeName === employeeName &&
+        req.itemName === itemName &&
         req.quantity === quantity
       );
 
@@ -64,15 +94,15 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
       }
 
       const result = await response.json();
-      
+
       if (result.success) {
         // Remove the approved/rejected request from the current list
         setRequests(prevRequests => Array.isArray(prevRequests) ? prevRequests.filter(req => req.id !== request.id) : []);
         // Also remove from filtered requests
         setSelectedRequests(new Set());
-        
+
         notifySuccess(successMessage);
-        
+
         // Send notification to store manager if request was approved
         if (status === 'Approved') {
           try {
@@ -89,7 +119,7 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
                 employeeName: employeeName
               })
             });
-            
+
             const notificationResult = await notificationResponse.json();
             if (notificationResult.success) {
               console.log('Notification sent to store manager successfully');
@@ -100,7 +130,7 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
             console.warn('Error sending notification to store manager:', notificationError);
           }
         }
-        
+
         // Auto-refresh the view after successful action
         setTimeout(() => {
           // Refresh can be handled by the parent component if needed
@@ -119,7 +149,7 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
 
   // Filter and sort pending requests
   const pendingOnly = Array.isArray(pendingRequests) ? pendingRequests.filter(req => req.status === 'Pending') : [];
-  
+
   const filteredRequests = pendingOnly.filter(req =>
     req.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     req.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -129,7 +159,7 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
 
   const sortedRequests = [...filteredRequests].sort((a, b) => {
     let aValue, bValue;
-    
+
     switch (sortBy) {
       case 'employee':
         aValue = a.employeeName.toLowerCase();
@@ -154,7 +184,7 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
       default:
         return 0;
     }
-    
+
     if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
     if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
     return 0;
@@ -189,10 +219,10 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
 
   const handleBulkAction = async (status) => {
     if (selectedRequests.size === 0) return;
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       const results = [];
       for (const requestId of selectedRequests) {
@@ -212,22 +242,22 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
             headers: { 'Content-Type': 'application/json' }
           });
         }
-        
+
         const result = await response.json();
         results.push({ id: requestId, success: result.success, message: result.message });
       }
-      
+
       // Update local state for successful operations - remove approved/rejected requests
       const successfulIds = results.filter(r => r.success).map(r => r.id);
       if (successfulIds.length > 0) {
-        setRequests(prev => prev.filter(req => 
+        setRequests(prev => prev.filter(req =>
           !successfulIds.includes(req.id)
         ));
       }
-      
+
       const successCount = results.filter(r => r.success).length;
       const failCount = results.filter(r => !r.success).length;
-      
+
       notifySuccess(`${successCount} requests ${status.toLowerCase()}ed successfully. ${failCount} failed.`);
       setSelectedRequests(new Set());
     } catch (error) {
@@ -251,11 +281,11 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
     try {
       notifySuccess('Exporting requests to Excel...');
       const response = await fetch('/api/requests/export');
-      
+
       if (!response.ok) {
         throw new Error('Export failed');
       }
-      
+
       // Create blob from response and download
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -266,7 +296,7 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-      
+
       notifySuccess('Requests exported successfully!');
     } catch (error) {
       console.error('Error exporting requests:', error);
@@ -292,6 +322,61 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
               </div>
             </div>
           </div>
+          {/* Notification Bell */}
+          <button
+            className="hr-notification-bell"
+            onClick={() => setShowNotifications(prev => !prev)}
+            aria-label="Notifications"
+            title="Notifications"
+          >
+            <Bell size={22} />
+            {unreadCount > 0 && (
+              <span className="notification-badge">{unreadCount}</span>
+            )}
+          </button>
+
+          {/* Notifications Dropdown */}
+          {showNotifications && (
+            <div className="notifications-dropdown top-position">
+              <div className="notifications-header">
+                <h3>Notifications</h3>
+                <div className="notifications-header-actions">
+                  <button onClick={() => setShowNotifications(false)} className="close-notifications-btn" aria-label="Close notifications">
+                    <CloseIcon size={18} />
+                  </button>
+                </div>
+              </div>
+              <div className="notifications-list">
+                {notifications.length === 0 ? (
+                  <div className="no-notifications">
+                    <span className="no-notifications-icon">🔔</span>
+                    <p>No notifications</p>
+                  </div>
+                ) : (
+                  notifications.map(notification => {
+                    const isUnread = !notification.read && !notification.read_status;
+                    const itemName = notification.itemName || notification.item_name;
+                    return (
+                    <div key={notification.id} className={`notification-item ${isUnread ? 'unread' : 'read'}`}>
+                      <div className="notification-content">
+                        <div className="notification-message">{notification.message}</div>
+                        <div className="notification-meta">
+                          <span className="notification-time">
+                            {new Date(notification.timestamp).toLocaleString()}
+                          </span>
+                          {itemName && (
+                            <span className="notification-item-name">Item: {itemName}</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Desktop Actions Bar */}
           <div className="hr-actions-bar desktop-actions-bar">
             <button className="header-action-btn records-btn" onClick={onViewRecords}>
