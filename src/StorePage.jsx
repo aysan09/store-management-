@@ -11,10 +11,9 @@ export default function StorePage({ onBack, onRequest, items, isManager = false,
   const [currentPage, setCurrentPage] = useState(1);
   const [isRequesting, setIsRequesting] = useState(false);
   const [showOutOfStockNotice, setShowOutOfStockNotice] = useState(false);
-  const [outOfStockNoticeStatus, setOutOfStockNoticeStatus] = useState('idle');
   const itemsPerPage = 5;
-  
-  // Auto-select first item when items change
+
+  // Keep a selected item available for the employee's next request.
   useEffect(() => {
     if (items.length > 0 && !selectedItem) {
       setSelectedItem(items[0]);
@@ -50,7 +49,6 @@ export default function StorePage({ onBack, onRequest, items, isManager = false,
 
   const handleMakeRequest = () => {
     if (selectedItem && Number(selectedItem.quantity) === 0) {
-      setOutOfStockNoticeStatus('idle');
       setShowOutOfStockNotice(true);
       return;
     }
@@ -150,7 +148,7 @@ export default function StorePage({ onBack, onRequest, items, isManager = false,
             </tr>
           </thead>
           <tbody>
-            {paginatedItems.map((item) => (
+            {paginatedItems.length > 0 ? paginatedItems.map((item) => (
               <tr 
                 key={item.id} 
                 className={`${item.quantity === 0 ? 'row-out-of-stock' : ''} ${item.quantity > 0 && item.quantity <= 5 ? 'row-low-stock' : ''} ${selectedItem && selectedItem.id === item.id ? 'row-selected' : ''}`}
@@ -171,7 +169,13 @@ export default function StorePage({ onBack, onRequest, items, isManager = false,
                   <StatusBadge quantity={item.quantity} />
                 </td>
               </tr>
-            ))}
+            )) : (
+              <tr>
+                <td colSpan="6" style={{ textAlign: 'center', padding: '32px', color: '#64748b' }}>
+                  No inventory items are available yet. Please ask the Store Manager to add items.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

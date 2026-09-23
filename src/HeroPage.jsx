@@ -11,10 +11,43 @@ export default function HeroPage({ onLoginClick, onAboutClick }) {
     uptime: 0
   });
   const [teamMembers, setTeamMembers] = useState([]);
-  
+  const [activeBar, setActiveBar] = useState(null);
+
   const statsRef = useRef(null);
   const featuresRef = useRef(null);
   const teamRef = useRef(null);
+  const heroRightRef = useRef(null);
+  const heroRef = useRef(null);
+
+  // Bar data drives the interactive dashboard chart
+  const heroBars = [
+    { label: 'Inv', value: 65, color: '#3ba7f2', name: 'Inventory' },
+    { label: 'Req', value: 85, color: '#7FE7D6', name: 'Requests' },
+    { label: 'HR', value: 45, color: '#f97316', name: 'HR Actions' },
+    { label: 'Sales', value: 75, color: '#8b5cf6', name: 'Sales' },
+    { label: 'Rep', value: 55, color: '#06b6d4', name: 'Reports' },
+    { label: 'Usr', value: 90, color: '#ec4899', name: 'Users' }
+  ];
+
+  // Subtle 3D parallax: dashboard tilts toward the cursor
+  const handleHeroMouseMove = (e) => {
+    const el = heroRightRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    el.style.setProperty('--rx', `${(-y * 8).toFixed(2)}deg`);
+    el.style.setProperty('--ry', `${(x * 10).toFixed(2)}deg`);
+    el.style.setProperty('--mx', `${((x + 0.5) * 100).toFixed(1)}%`);
+    el.style.setProperty('--my', `${((y + 0.5) * 100).toFixed(1)}%`);
+  };
+
+  const handleHeroMouseLeave = () => {
+    const el = heroRightRef.current;
+    if (!el) return;
+    el.style.setProperty('--rx', '0deg');
+    el.style.setProperty('--ry', '0deg');
+  };
 
   useEffect(() => {
     // Observer for hero section (Nero section)
@@ -280,13 +313,26 @@ export default function HeroPage({ onLoginClick, onAboutClick }) {
         </div>
       </header>
 
-      <main className="hero">
+      <main className="hero" ref={heroRef}>
         <div className="hero-left">
           <h1 className="title">Vascom Store<br/>Management<br/>System</h1>
-          <p className="hero-subtitle">Effortless inventory &amp; request management.</p>
+          <p className="hero-subtitle">
+            Effortless inventory &amp; request management.
+            {activeBar && (
+              <span className="hero-live-readout">
+                <span className="hero-live-dot" style={{ background: activeBar.color }}></span>
+                {activeBar.name}: <strong>{activeBar.value}%</strong>
+              </span>
+            )}
+          </p>
           <button className="cta" onClick={scrollToAbout}>About us</button>
         </div>
-      <div className="hero-right">
+      <div
+        className="hero-right"
+        ref={heroRightRef}
+        onMouseMove={handleHeroMouseMove}
+        onMouseLeave={handleHeroMouseLeave}
+      >
         <div className="analytics-screen-container">
           <div className="screen-frame">
             <div className="screen-header">
@@ -297,36 +343,38 @@ export default function HeroPage({ onLoginClick, onAboutClick }) {
               </div>
               <span className="screen-title">Analytics Dashboard</span>
             </div>
+            <div className="hero-live-badge">
+              <span className="hero-live-badge-dot"></span> Live
+            </div>
             <div className="screen-content">
               <div className="charts-container">
                 <div className="bar-chart-section">
                   <div className="bar-graph">
-                    <div className="bar" style={{ '--height': '65%', '--color': '#3ba7f2', '--delay': '0.1s' }}>
-                      <span className="bar-value">65%</span>
-                    </div>
-                    <div className="bar" style={{ '--height': '85%', '--color': '#7FE7D6', '--delay': '0.3s' }}>
-                      <span className="bar-value">85%</span>
-                    </div>
-                    <div className="bar" style={{ '--height': '45%', '--color': '#f97316', '--delay': '0.5s' }}>
-                      <span className="bar-value">45%</span>
-                    </div>
-                    <div className="bar" style={{ '--height': '75%', '--color': '#8b5cf6', '--delay': '0.7s' }}>
-                      <span className="bar-value">75%</span>
-                    </div>
-                    <div className="bar" style={{ '--height': '55%', '--color': '#06b6d4', '--delay': '0.9s' }}>
-                      <span className="bar-value">55%</span>
-                    </div>
-                    <div className="bar" style={{ '--height': '90%', '--color': '#ec4899', '--delay': '1.1s' }}>
-                      <span className="bar-value">90%</span>
-                    </div>
+                    {heroBars.map((bar, index) => (
+                      <div
+                        key={bar.label}
+                        className={`bar ${activeBar && activeBar.label === bar.label ? 'bar-active' : ''}`}
+                        role="button"
+                        tabIndex={0}
+                        title={`${bar.name}: ${bar.value}%`}
+                        onClick={() => setActiveBar(bar)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveBar(bar); } }}
+                        style={{ '--height': `${bar.value}%`, '--color': bar.color, '--delay': `${0.1 + index * 0.2}s` }}
+                      >
+                        <span className="bar-value">{bar.value}%</span>
+                      </div>
+                    ))}
                   </div>
                   <div className="bar-labels">
-                    <span>Inv</span>
-                    <span>Req</span>
-                    <span>HR</span>
-                    <span>Sales</span>
-                    <span>Rep</span>
-                    <span>Usr</span>
+                    {heroBars.map((bar) => (
+                      <span
+                        key={bar.label}
+                        className={activeBar && activeBar.label === bar.label ? 'label-active' : ''}
+                        onClick={() => setActiveBar(bar)}
+                      >
+                        {bar.label}
+                      </span>
+                    ))}
                   </div>
                 </div>
                 <div className="pie-chart-section">

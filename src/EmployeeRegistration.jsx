@@ -16,6 +16,12 @@ export default function EmployeeRegistration({ onBack, onAddEmployee }) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  // Hover states for animated interactive feedback
+  const [isBackHovered, setIsBackHovered] = useState(false);
+  const [isSubmitHovered, setIsSubmitHovered] = useState(false);
+  const [isPwdToggleHovered, setIsPwdToggleHovered] = useState(false);
+  const [isConfirmPwdToggleHovered, setIsConfirmPwdToggleHovered] = useState(false);
+
   // Load existing employees from database on component mount
   useEffect(() => {
     loadEmployees();
@@ -115,13 +121,81 @@ export default function EmployeeRegistration({ onBack, onAddEmployee }) {
     }
   };
 
+  // Dynamic Button Inline Styles
+  const backButtonStyle = {
+    background: isBackHovered ? '#f3f4f6' : 'transparent',
+    color: '#374151',
+    border: '1px solid #d1d5db',
+    borderRadius: '6px',
+    padding: '8px 16px',
+    fontSize: '14px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    transform: isBackHovered ? 'translateX(-3px)' : 'none',
+    transition: 'all 0.2s ease-in-out',
+    boxShadow: isBackHovered ? '0 2px 4px rgba(0,0,0,0.08)' : 'none'
+  };
+
+  const submitButtonStyle = {
+    backgroundColor: loading ? '#0369a1' : (isSubmitHovered ? '#0369a1' : '#0284c7'),
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: '8px',
+    padding: '12px 20px',
+    fontSize: '15px',
+    fontWeight: '600',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
+    cursor: loading ? 'not-allowed' : 'pointer',
+    width: '100%',
+    transition: 'all 0.2s ease-in-out',
+    transform: isSubmitHovered && !loading ? 'translateY(-1px)' : 'none',
+    boxShadow: isSubmitHovered && !loading ? '0 4px 12px rgba(2, 132, 199, 0.3)' : '0 2px 4px rgba(0,0,0,0.05)'
+  };
+
+  const getToggleButtonStyle = (isHovered) => ({
+    background: isHovered ? '#f3f4f6' : 'transparent',
+    border: 'none',
+    borderRadius: '4px',
+    padding: '4px 8px',
+    cursor: 'pointer',
+    fontSize: '16px',
+    transition: 'all 0.2s ease-in-out',
+    transform: isHovered ? 'scale(1.15)' : 'scale(1)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  });
 
   return (
     <div className="employee-registration-page">
+      {/* Keyframe Spinner Animation */}
+      <style>
+        {`
+          @keyframes registrationSpin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}
+      </style>
+
       <div className="employee-registration-container">
         {/* Header Section */}
         <div className="registration-header">
-          <button className="back-btn" onClick={onBack} style={{ position: 'relative' }}>← Back</button>
+          <button 
+            className="back-btn" 
+            onClick={onBack} 
+            onMouseEnter={() => setIsBackHovered(true)}
+            onMouseLeave={() => setIsBackHovered(false)}
+            style={backButtonStyle}
+          >
+            ← Back
+          </button>
           <div className="header-content">
             <h1 className="registration-title">Employee Registration</h1>
             <p className="registration-subtitle">Add new employees to the system</p>
@@ -226,6 +300,9 @@ export default function EmployeeRegistration({ onBack, onAddEmployee }) {
                     type="button"
                     className="password-toggle"
                     onClick={() => setShowPassword(!showPassword)}
+                    onMouseEnter={() => setIsPwdToggleHovered(true)}
+                    onMouseLeave={() => setIsPwdToggleHovered(false)}
+                    style={getToggleButtonStyle(isPwdToggleHovered)}
                   >
                     {showPassword ? "🙈" : "👁️"}
                   </button>
@@ -251,6 +328,9 @@ export default function EmployeeRegistration({ onBack, onAddEmployee }) {
                     type="button"
                     className="password-toggle"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    onMouseEnter={() => setIsConfirmPwdToggleHovered(true)}
+                    onMouseLeave={() => setIsConfirmPwdToggleHovered(false)}
+                    style={getToggleButtonStyle(isConfirmPwdToggleHovered)}
                   >
                     {showConfirmPassword ? "🙈" : "👁️"}
                   </button>
@@ -264,15 +344,19 @@ export default function EmployeeRegistration({ onBack, onAddEmployee }) {
                 type="submit" 
                 className="submit-btn"
                 disabled={loading}
+                onMouseEnter={() => setIsSubmitHovered(true)}
+                onMouseLeave={() => setIsSubmitHovered(false)}
+                style={submitButtonStyle}
               >
                 {loading ? (
                   <>
-                    <span className="loading-spinner"></span>
-                    Registering...
+                    <span style={{ display: 'inline-block', animation: 'registrationSpin 1s linear infinite' }}>⏳</span>
+                    <span>Registering...</span>
                   </>
                 ) : (
                   <>
-                    🎯 Register Employee
+                    <span>🎯</span>
+                    <span>Register Employee</span>
                   </>
                 )}
               </button>

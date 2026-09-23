@@ -350,9 +350,14 @@
     padding: 18px 16px;
   }
 
-  .status-table-header,
-  .status-table-row {
-    grid-template-columns: 1.5fr 1fr 1fr 1fr 1.2fr 1.2fr;
+  .request-status-table .status-table-header,
+  .request-status-table .status-table-row {
+    grid-template-columns: 1.2fr 1.2fr 1fr 0.6fr 1.6fr 1fr 1fr;
+  }
+
+  .finished-requests-table .status-table-header,
+  .finished-requests-table .status-table-row {
+    grid-template-columns: 1.1fr 1.1fr 0.9fr 0.5fr 1fr 1fr 1fr 1.4fr 1fr;
   }
 
   .hr-table-header,
@@ -804,14 +809,19 @@
 
 /* Large Text Support */
 @media (min-width: 1200px) {
-  .status-table-header,
-  .status-table-row {
-    grid-template-columns: 2fr 1.5fr 1fr 1.5fr 2fr 1.5fr;
+  .request-status-table .status-table-header,
+  .request-status-table .status-table-row {
+    grid-template-columns: 1.2fr 1.2fr 1fr 0.6fr 1.6fr 1fr 1fr;
+  }
+
+  .finished-requests-table .status-table-header,
+  .finished-requests-table .status-table-row {
+    grid-template-columns: 1.1fr 1.1fr 0.9fr 0.5fr 1fr 1fr 1fr 1.4fr 1fr;
   }
 
   .hr-table-header,
   .hr-table-row {
-    grid-template-columns: 2fr 1.5fr 1fr 1.5fr 2fr 1.5fr;
+    grid-template-columns: 2fr 1.5fr 1fr 1.5fr 2fr 1.5fr 1fr 1fr;
   }
 
   .employee-table-header,

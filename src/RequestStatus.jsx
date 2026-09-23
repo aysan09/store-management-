@@ -184,16 +184,15 @@ export default function RequestStatus({ onBack, requests: propsRequests }) {
             </p>
           </div>
         ) : (
-          <div className="status-table-container">
+          <div className="status-table-container request-status-table">
             <div className="status-table-header">
               <div className="table-header-cell">Employee</div>
               <div className="table-header-cell">Item Name</div>
               <div className="table-header-cell">Brand</div>
               <div className="table-header-cell">Quantity</div>
-               <div>Purpose</div>
+              <div className="table-header-cell">Purpose</div>
               <div className="table-header-cell">Date</div>
               <div className="table-header-cell">Status</div>
-             
             </div>
 
             {filteredRequests.map((req, index) => (

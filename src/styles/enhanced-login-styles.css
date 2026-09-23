@@ -578,3 +578,220 @@
   background: rgba(255, 255, 255, 0.95);
   border-color: rgba(255, 255, 255, 0.4);
 }
+
+/* ============================================================
+   Interactive Login Enhancements
+   ============================================================ */
+
+/* Animated background layer with floating orbs */
+.login-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(40px);
+  opacity: 0.45;
+  will-change: transform;
+}
+
+.orb-1 {
+  width: 320px;
+  height: 320px;
+  background: radial-gradient(circle, #7ec8ff 0%, rgba(126, 200, 255, 0) 70%);
+  top: -80px;
+  left: -60px;
+  animation: orbFloat1 16s ease-in-out infinite;
+}
+
+.orb-2 {
+  width: 260px;
+  height: 260px;
+  background: radial-gradient(circle, #ffffff 0%, rgba(255, 255, 255, 0) 70%);
+  bottom: -60px;
+  right: -40px;
+  animation: orbFloat2 20s ease-in-out infinite;
+}
+
+.orb-3 {
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, #062b68 0%, rgba(6, 43, 104, 0) 70%);
+  top: 40%;
+  right: 8%;
+  animation: orbFloat3 24s ease-in-out infinite;
+}
+
+.orb-4 {
+  width: 160px;
+  height: 160px;
+  background: radial-gradient(circle, #3ba7f2 0%, rgba(59, 167, 242, 0) 70%);
+  bottom: 12%;
+  left: 10%;
+  animation: orbFloat1 18s ease-in-out infinite reverse;
+}
+
+@keyframes orbFloat1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(60px, 40px) scale(1.15); }
+}
+
+@keyframes orbFloat2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-50px, -30px) scale(1.1); }
+}
+
+@keyframes orbFloat3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-30px, 50px) scale(1.2); }
+}
+
+/* Card entrance */
+.login-card {
+  z-index: 1;
+  animation: cardEnter 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes cardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Robot pupils that follow the pointer */
+.robot-eye {
+  position: relative;
+  overflow: hidden;
+}
+
+.robot-pupil {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  background: #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.9);
+  transition: transform 0.12s ease-out;
+}
+
+.robot-character.is-hiding .robot-pupil {
+  opacity: 0;
+}
+
+/* Field icon + input wrapper */
+.field-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.field-icon {
+  position: absolute;
+  left: 14px;
+  font-size: 16px;
+  line-height: 1;
+  opacity: 0.65;
+  pointer-events: none;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+  z-index: 2;
+}
+
+.field-input-wrap .field-input,
+.password-input-container .field-input {
+  padding-left: 42px;
+}
+
+.field-input-wrap:focus-within .field-icon,
+.password-input-container:focus-within .field-icon {
+  opacity: 1;
+  transform: scale(1.15);
+}
+
+.password-input-container .field-input {
+  padding-right: 52px;
+}
+
+/* Input focus lift */
+.field-input:focus {
+  transform: translateY(-1px);
+}
+
+/* Submit button: arrow + loading spinner */
+.login-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-btn-arrow {
+  transition: transform 0.25s ease;
+}
+
+.login-btn:hover .login-btn-arrow {
+  transform: translateX(4px);
+}
+
+.login-btn:disabled {
+  cursor: progress;
+  opacity: 0.9;
+}
+
+.login-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Shimmer sweep across the button on hover */
+.login-btn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -120%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.35) 50%,
+    transparent 100%
+  );
+  transition: left 0.6s ease;
+}
+
+.login-btn:hover::after {
+  left: 130%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orb,
+  .login-card {
+    animation: none;
+  }
+  .login-spinner {
+    animation-duration: 1s;
+  }
+}

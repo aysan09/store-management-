@@ -7,13 +7,37 @@ import ExpandableSearch from './components/ExpandableSearch';
 export default function StoreManager({ onBack, inventory, setInventory, onViewRequests }) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [search, setSearch] = useState("");
+  const [itemToDelete, setItemToDelete] = useState(null);
+  const [itemToEdit, setItemToEdit] = useState(null);
+  
+  // Bell animation trigger state
+  const [isRinging, setIsRinging] = useState(false);
+  const [bellKey, setBellKey] = useState(0);
 
+  // Opens the delete confirmation modal
   const handleDelete = (id) => {
     const item = inventory.find(item => item.id === id);
-    if (window.confirm(`Are you sure you want to delete "${item.model}" by ${item.brand}? This action cannot be undone.`)) {
-      setInventory(inventory.filter(item => item.id !== id));
-      notifySuccess(`✅ Successfully deleted "${item.model}" from inventory.`);
-    }
+    if (item) setItemToDelete(item);
+  };
+
+  // Runs after the user confirms deletion
+  const confirmDelete = () => {
+    if (!itemToDelete) return;
+    setInventory(inventory.filter(item => item.id !== itemToDelete.id));
+    notifySuccess(`✅ Successfully deleted "${itemToDelete.model}" from inventory.`);
+    setItemToDelete(null);
+  };
+
+  // Trigger bell swing animation
+  const handleRequestsClick = () => {
+    setBellKey(prev => prev + 1); // Remounts SVG to restart animation
+    setIsRinging(true);
+    
+    setTimeout(() => {
+      setIsRinging(false);
+    }, 800);
+
+    if (onViewRequests) onViewRequests();
   };
 
   // Export inventory to Excel
@@ -21,12 +45,11 @@ export default function StoreManager({ onBack, inventory, setInventory, onViewRe
     try {
       notifyInfo('Exporting inventory to Excel...');
       const response = await fetch('/api/items/export');
-      
+
       if (!response.ok) {
         throw new Error('Export failed');
       }
-      
-      // Create blob from response and download
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -36,7 +59,7 @@ export default function StoreManager({ onBack, inventory, setInventory, onViewRe
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-      
+
       notifySuccess('Inventory exported successfully!');
     } catch (error) {
       console.error('Error exporting items:', error);
@@ -45,92 +68,7 @@ export default function StoreManager({ onBack, inventory, setInventory, onViewRe
   };
 
   const handleEdit = (item) => {
-    // Create a custom modal for edit confirmation
-    const modal = document.createElement('div');
-    modal.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.5);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    `;
-    
-    const modalContent = document.createElement('div');
-    modalContent.style.cssText = `
-      background: white;
-      padding: 30px;
-      border-radius: 16px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-      text-align: center;
-      max-width: 400px;
-      width: 90%;
-      border: 2px solid #e5e7eb;
-    `;
-    
-    modalContent.innerHTML = `
-      <div style="font-size: 48px; margin-bottom: 15px;">✏️</div>
-      <h3 style="color: #0b3D91; margin: 0 0 10px 0; font-size: 20px;">Edit Item</h3>
-      <p style="color: #374151; margin: 0 0 20px 0; font-size: 14px; line-height: 1.5;">
-        You are about to edit <strong>"${item.model}"</strong> by <strong>${item.brand}</strong>
-      </p>
-      <div style="display: flex; gap: 10px; justify-content: center;">
-        <button id="cancel-btn" style="
-          background: #64748b;
-          color: white;
-          border: none;
-          padding: 10px 20px;
-          border-radius: 8px;
-          cursor: pointer;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          font-size: 12px;
-        ">Cancel</button>
-        <button id="edit-btn" style="
-          background: linear-gradient(135deg, #0b3D91, #062b68);
-          color: white;
-          border: none;
-          padding: 10px 20px;
-          border-radius: 8px;
-          cursor: pointer;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          font-size: 12px;
-        ">Edit Item</button>
-      </div>
-    `;
-    
-    modal.appendChild(modalContent);
-    modal.className = 'modal-overlay';
-    document.body.appendChild(modal);
-    
-    // Add event listeners to buttons
-    const cancelBtn = modalContent.querySelector('#cancel-btn');
-    const editBtn = modalContent.querySelector('#edit-btn');
-    
-    const closeModal = () => {
-      modal.remove();
-    };
-    
-    cancelBtn.addEventListener('click', closeModal);
-    editBtn.addEventListener('click', () => {
-      closeModal();
-      alert(`Edit functionality for "${item.model}" would open here.`);
-    });
-    
-    // Add event listener to handle clicks outside the modal
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) {
-        closeModal();
-      }
-    });
+    setItemToEdit(item);
   };
 
   // Calculate statistics
@@ -140,20 +78,92 @@ export default function StoreManager({ onBack, inventory, setInventory, onViewRe
   const outOfStockItems = inventory.filter(item => item.quantity === 0).length;
 
   // Filter inventory based on search
-  const filteredInventory = inventory.filter(item => 
+  const filteredInventory = inventory.filter(item =>
     item.model.toLowerCase().includes(search.toLowerCase()) ||
     item.brand.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
     <div className="store-manager-page">
+      {/* Keyframe animations injected directly */}
+      <style>{`
+        @keyframes svgBellSwing {
+          0% { transform: rotate(0deg); }
+          15% { transform: rotate(25deg); }
+          30% { transform: rotate(-22deg); }
+          45% { transform: rotate(18deg); }
+          60% { transform: rotate(-12deg); }
+          75% { transform: rotate(6deg); }
+          100% { transform: rotate(0deg); }
+        }
+
+        .bell-svg-ringing {
+          transform-origin: 12px 2px !important; /* Swing from top loop */
+          animation: svgBellSwing 0.8s cubic-bezier(0.36, 0.07, 0.19, 0.97) !important;
+        }
+
+        /* Responsive click active scale effect */
+        .click-animate {
+          transition: transform 0.1s ease !important;
+          user-select: none;
+        }
+
+        .click-animate:active {
+          transform: scale(0.92) !important;
+        }
+      `}</style>
+
       <div className="store-manager-header">
-        <button className="back-btn" onClick={onBack} style={{ position: 'relative' }}>← Logout</button>
+        <button 
+          className="back-btn click-animate" 
+          onClick={onBack} 
+          style={{ position: 'relative' }}
+        >
+          ← Logout
+        </button>
         <h1 className="store-manager-title">Store Manager</h1>
-      <div style={{display: 'flex', gap: '10px'}}>
-          <button className="records-btn" style={{background: '#3ba7f2'}} onClick={() => setShowAddModal(true)}>+ Add New Item</button>
-          <button className="records-btn" style={{background: '#3ba7f2'}} onClick={() => onViewRequests && onViewRequests()}>View Requests</button>
-          <button className="records-btn" style={{background: '#0284c7'}} onClick={handleExport}>📥 Export Items</button>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <button 
+            className="records-btn click-animate" 
+            style={{ background: '#3ba7f2' }} 
+            onClick={() => setShowAddModal(true)}
+          >
+            + Add New Item
+          </button>
+          
+          <button 
+            className="records-btn click-animate" 
+            style={{ 
+              background: '#3ba7f2', 
+              display: 'inline-flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              gap: '8px' 
+            }} 
+            onClick={handleRequestsClick}
+          >
+            {/* SVG Bell Icon with explicit top pivot transform-origin */}
+            <svg
+              key={bellKey}
+              className={isRinging ? 'bell-svg-ringing' : ''}
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              style={{ display: 'inline-block', verticalAlign: 'middle' }}
+            >
+              <path d="M12 2a2 2 0 0 0-2 2v1.07A7.002 7.002 0 0 0 4 12v5l-2 2v1h20v-1l-2-2v-5a7.002 7.002 0 0 0-6-6.93V4a2 2 0 0 0-2-2zm0 20a3 3 0 0 0 3-3h-6a3 3 0 0 0 3 3z" />
+            </svg>
+            <span>View Requests</span>
+          </button>
+
+          <button 
+            className="records-btn click-animate" 
+            style={{ background: '#0284c7' }} 
+            onClick={handleExport}
+          >
+            📥 Export Items
+          </button>
         </div>
       </div>
 
@@ -186,7 +196,7 @@ export default function StoreManager({ onBack, inventory, setInventory, onViewRe
             onChange={setSearch}
           />
         </div>
-        
+
         {/* Table */}
         <div className="store-manager-table-container">
           <div className="store-manager-table-header">
@@ -198,36 +208,36 @@ export default function StoreManager({ onBack, inventory, setInventory, onViewRe
             <div className="table-header-cell">Status</div>
             <div className="table-header-cell">Action</div>
           </div>
-          
+
           {filteredInventory.map(item => (
             <div className="store-manager-table-row" key={item.id}>
               <div className="table-cell">
-                <img 
-                  src={item.photo} 
-                  alt="" 
-                  style={{width: '55px', height: '55px', objectFit: 'cover', borderRadius: '8px'}} 
+                <img
+                  src={item.photo}
+                  alt=""
+                  style={{ width: '55px', height: '55px', objectFit: 'cover', borderRadius: '8px' }}
                 />
               </div>
-              
+
               <div className="table-cell item-cell">
                 <span className="product-model-label">Model</span>
                 <div className="item-name product-model-value">{item.model}</div>
               </div>
-              
+
               <div className="table-cell brand-cell">
                 <div className="brand">{item.brand}</div>
               </div>
-              
+
               <div className="table-cell category-cell">
                 {item.category || 'N/A'}
               </div>
-              
+
               <div className="table-cell quantity-cell">
                 <span className="quantity-badge">
                   {item.quantity === 0 ? "Out of Stock" : item.quantity}
                 </span>
               </div>
-              
+
               <div className="table-cell status-cell">
                 <span className={`status-badge ${item.quantity === 0 ? 'out-of-stock' : item.quantity < 5 ? 'low-stock' : 'in-stock'}`}>
                   {item.quantity === 0 ? 'Out of Stock' : item.quantity < 5 ? 'Low Stock' : 'In Stock'}
@@ -236,8 +246,8 @@ export default function StoreManager({ onBack, inventory, setInventory, onViewRe
 
               <div className="table-cell action-cell">
                 <div className="store-actions">
-                  <button className="edit-btn" onClick={() => handleEdit(item)}>Edit</button>
-                  <button className="delete-btn" onClick={() => handleDelete(item.id)}>Delete</button>
+                  <button className="edit-btn click-animate" onClick={() => handleEdit(item)}>Edit</button>
+                  <button className="delete-btn click-animate" onClick={() => handleDelete(item.id)}>Delete</button>
                 </div>
               </div>
             </div>
@@ -246,11 +256,83 @@ export default function StoreManager({ onBack, inventory, setInventory, onViewRe
       </div>
 
       {showAddModal && (
-        <AddItemModal 
-          onSave={(item) => { setInventory([...inventory, item]); setShowAddModal(false); }} 
+        <AddItemModal
+          onSave={(item) => { setInventory([...inventory, item]); setShowAddModal(false); }}
           onCancel={() => setShowAddModal(false)}
           onViewRequests={onViewRequests}
         />
+      )}
+
+      {/* Edit Modal */}
+      {itemToEdit && (
+        <div className="modal-overlay" onClick={() => setItemToEdit(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ textAlign: 'center', maxWidth: '400px' }}>
+            <div style={{ fontSize: '48px', marginBottom: '15px' }}>✏️</div>
+            <h3 style={{ color: '#0b3D91', margin: '0 0 10px 0', fontSize: '20px' }}>Edit Item</h3>
+            <p style={{ color: '#374151', margin: '0 0 20px 0', fontSize: '14px', lineHeight: '1.5' }}>
+              You are about to edit <strong>"{itemToEdit.model}"</strong> by <strong>{itemToEdit.brand}</strong>
+            </p>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+              <button
+                className="click-animate"
+                style={{
+                  background: '#64748b',
+                  color: 'white',
+                  border: 'none',
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: 700,
+                  fontSize: '12px'
+                }}
+                onClick={() => setItemToEdit(null)}
+              >
+                Cancel
+              </button>
+              <button
+                className="click-animate"
+                style={{
+                  background: 'linear-gradient(135deg, #0b3D91, #062b68)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: 700,
+                  fontSize: '12px'
+                }}
+                onClick={() => {
+                  notifyInfo(`Edit functionality for "${itemToEdit.model}" initiated.`);
+                  setItemToEdit(null);
+                }}
+              >
+                Edit Item
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {itemToDelete && (
+        <div className="modal-overlay" onClick={() => setItemToDelete(null)}>
+          <div className="modal-content delete-confirm-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-icon">🗑️</div>
+            <h3>Delete Item</h3>
+            <p className="modal-subtitle">
+              Are you sure you want to delete <strong>{itemToDelete.model}</strong>
+              {itemToDelete.brand ? ` by ${itemToDelete.brand}` : ''}? This action cannot be undone.
+            </p>
+            <div className="modal-actions">
+              <button className="records-btn click-animate" style={{ background: '#64748b' }} onClick={() => setItemToDelete(null)}>
+                Cancel
+              </button>
+              <button className="delete-btn click-animate" onClick={confirmDelete}>
+                Delete Item
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

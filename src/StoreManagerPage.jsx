@@ -468,8 +468,13 @@ export default function StoreManagerPage({
         
         {/* Desktop Header Actions */}
         <div className="header-actions desktop-header-actions">
-          <div className="notification-bell" onClick={() => setShowNotifications(!showNotifications)}>
-            <Bell size={24} />
+          <div
+            className={`notification-bell ${notifications.filter(n => !n.read).length > 0 ? 'bell-ring' : ''}`}
+            onClick={() => setShowNotifications(!showNotifications)}
+            aria-label="Notifications"
+            title="Notifications"
+          >
+            <Bell size={24} className="bell-icon" />
             {notifications.filter(n => !n.read).length > 0 && (
               <span className="notification-badge">
                 {notifications.filter(n => !n.read).length}
@@ -494,8 +499,13 @@ export default function StoreManagerPage({
         {/* Mobile Header Actions */}
         <div className="mobile-header-actions">
           <div className="mobile-header-left">
-            <div className="notification-bell" onClick={() => setShowNotifications(!showNotifications)}>
-              <Bell size={24} />
+            <div
+              className={`notification-bell ${notifications.filter(n => !n.read).length > 0 ? 'bell-ring' : ''}`}
+              onClick={() => setShowNotifications(!showNotifications)}
+              aria-label="Notifications"
+              title="Notifications"
+            >
+              <Bell size={24} className="bell-icon" />
               {notifications.filter(n => !n.read).length > 0 && (
                 <span className="notification-badge">
                   {notifications.filter(n => !n.read).length}
