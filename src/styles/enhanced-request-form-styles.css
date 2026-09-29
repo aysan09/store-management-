@@ -97,6 +97,37 @@
   position: relative;
 }
 
+/* Styles */
+.request-employee-info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: -12px 0 24px;
+  padding: 10px 14px;
+  background: rgba(11, 61, 145, 0.06);
+  border: 1px solid rgba(11, 61, 145, 0.15);
+  border-radius: 10px;
+}
+
+.request-employee-name {
+  color: #0b3D91;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.request-employee-id {
+  color: #4b5563;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  background: #ffffff;
+  border: 1px solid rgba(11, 61, 145, 0.2);
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+
 .form-sub::after {
   content: '';
   position: absolute;

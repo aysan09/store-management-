@@ -28,6 +28,35 @@ async function testConnection() {
   }
 }
 
+// Link existing requests to their employee and item IDs.
+// Older rows only stored the employee/item names, so we resolve the IDs from
+// the employees and items tables. Rows that were already linked are skipped.
+async function backfillRequestIds() {
+  try {
+    const [employeeResult] = await db.execute(`
+      UPDATE requests r
+      JOIN employees e ON e.name = r.employee_name
+      SET r.employee_id = e.id
+      WHERE r.employee_id IS NULL
+    `);
+
+    const [itemResult] = await db.execute(`
+      UPDATE requests r
+      JOIN items i ON i.model = r.item_name AND (i.brand <=> r.item_brand)
+      SET r.item_id = i.id
+      WHERE r.item_id IS NULL
+    `);
+
+    if (employeeResult.affectedRows > 0 || itemResult.affectedRows > 0) {
+      console.log(`✅ Linked ${employeeResult.affectedRows} request(s) to employees and ${itemResult.affectedRows} request(s) to items`);
+    }
+  } catch (err) {
+    // Backfilling is best effort: names may not match any record (e.g. renamed
+    // or deleted employees/items), and that must not stop the server.
+    console.warn('Could not backfill request IDs:', err.message);
+  }
+}
+
 // Initialize database tables
 async function initDatabase() {
   try {
@@ -65,7 +94,9 @@ async function initDatabase() {
     await db.execute(`
       CREATE TABLE IF NOT EXISTS requests (
         id INT AUTO_INCREMENT PRIMARY KEY,
+        employee_id INT,
         employee_name VARCHAR(255) NOT NULL,
+        item_id INT,
         item_name VARCHAR(255) NOT NULL,
         item_brand VARCHAR(255),
         quantity INT NOT NULL,
@@ -78,16 +109,29 @@ async function initDatabase() {
       )
     `);
 
-    // Add item_brand column if it doesn't exist
-    try {
-      await db.execute('ALTER TABLE requests ADD COLUMN item_brand VARCHAR(255) AFTER item_name');
-      console.log('✅ Added item_brand column to requests table');
-    } catch (err) {
-      // Column might already exist
-      if (err.code !== 'ER_DUP_FIELDNAME') {
-        console.error('Error adding item_brand column:', err.message);
+    // Add columns that may be missing on databases created by older versions
+    const requestColumns = [
+      { name: 'item_brand', definition: 'VARCHAR(255) AFTER item_name' },
+      { name: 'employee_id', definition: 'INT AFTER id' },
+      { name: 'item_id', definition: 'INT AFTER employee_name' }
+    ];
+
+    for (const column of requestColumns) {
+      try {
+        await db.execute(`ALTER TABLE requests ADD COLUMN ${column.name} ${column.definition}`);
+        console.log(`✅ Added ${column.name} column to requests table`);
+      } catch (err) {
+        // Column might already exist
+        if (err.code !== 'ER_DUP_FIELDNAME') {
+          console.error(`Error adding ${column.name} column:`, err.message);
+        }
       }
     }
+
+    // Backfill the employee/item IDs of existing requests so the whole system
+    // can rely on the database IDs instead of matching names.
+    await backfillRequestIds();
+
     console.log('✅ Requests table created successfully');
 
     // Check if employees table has data

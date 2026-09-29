@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ToastContainer } from 'react-toastify';
 import { notifySuccess, notifyError } from './utils/toastUtils';
-import { Menu, X as CloseIcon, Download, Bell } from 'lucide-react';
+import { Menu, X as CloseIcon, Bell } from 'lucide-react';
 import SortDropdown from './components/SortDropdown';
 import ExpandableSearch from './components/ExpandableSearch';
 import 'react-toastify/dist/ReactToastify.css';
@@ -78,8 +78,9 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
 
       } else if (status === 'Rejected') {
         response = await fetch(`/api/requests/${request.id}/reject`, {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' }
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
         });
 
         successMessage = (isReorder || request.isOutOfStockNotification)
@@ -112,8 +113,9 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
               body: JSON.stringify({
                 message: notificationMsg,
                 type: isRestock ? 'reorder_request' : 'hr_approval',
-                itemId: request.id,
+                itemId: request.itemId ?? request.id,
                 itemName: itemName,
+                employeeId: request.employeeId ?? null,
                 employeeName: employeeName
               })
             });
@@ -141,10 +143,11 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
     : [];
 
   const filteredRequests = pendingOnly.filter(req =>
-    req.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    req.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (req.employeeName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (req.itemName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (req.itemBrand && req.itemBrand.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    req.purpose.toLowerCase().includes(searchTerm.toLowerCase())
+    String(req.employeeId ?? '').includes(searchTerm) ||
+    (req.purpose || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const sortedRequests = [...filteredRequests].sort((a, b) => {
@@ -231,8 +234,9 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
           });
         } else {
           response = await fetch(`/api/requests/${request.id}/reject`, {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' }
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
           });
         }
 
@@ -360,19 +364,19 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
 
           <div className="hr-actions-bar desktop-actions-bar">
             <button className="header-action-btn records-btn" onClick={onViewRecords}>
-              <span className="btn-icon">📋</span>
+              <span className="btn-icon"><i className="fas fa-clipboard-list" aria-hidden="true"></i></span>
               <span className="btn-text">Records</span>
             </button>
             <button className="header-action-btn employee-mgmt-btn" onClick={() => onEmployeeManagement && onEmployeeManagement()}>
-              <span className="btn-icon">👥</span>
+              <span className="btn-icon"><i className="fas fa-users" aria-hidden="true"></i></span>
               <span className="btn-text">Employee Management</span>
             </button>
             <button className="header-action-btn register-btn" onClick={() => onRegisterEmployee && onRegisterEmployee()}>
-              <span className="btn-icon">➕</span>
+              <span className="btn-icon"><i className="fas fa-user-plus" aria-hidden="true"></i></span>
               <span className="btn-text">Register Employee</span>
             </button>
             <button className="header-action-btn export-btn" onClick={handleExportRequests}>
-              <span className="btn-icon"><Download size={16} /></span>
+              <span className="btn-icon"><i className="fas fa-download" aria-hidden="true"></i></span>
               <span className="btn-text">Export Requests</span>
             </button>
           </div>
@@ -391,19 +395,19 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
               </div>
               <div className="mobile-menu-items">
                 <button onClick={() => { onViewRecords(); setIsMobileMenuOpen(false); }} className="mobile-menu-item">
-                  <span className="mobile-menu-icon">📋</span>
+                  <span className="mobile-menu-icon"><i className="fas fa-clipboard-list" aria-hidden="true"></i></span>
                   Records
                 </button>
                 <button onClick={() => { if (onEmployeeManagement) onEmployeeManagement(); setIsMobileMenuOpen(false); }} className="mobile-menu-item">
-                  <span className="mobile-menu-icon">👥</span>
+                  <span className="mobile-menu-icon"><i className="fas fa-users" aria-hidden="true"></i></span>
                   Employee Management
                 </button>
                 <button onClick={() => { if (onRegisterEmployee) onRegisterEmployee(); setIsMobileMenuOpen(false); }} className="mobile-menu-item">
-                  <span className="mobile-menu-icon">➕</span>
+                  <span className="mobile-menu-icon"><i className="fas fa-user-plus" aria-hidden="true"></i></span>
                   Register Employee
                 </button>
                 <button onClick={() => { handleExportRequests(); setIsMobileMenuOpen(false); }} className="mobile-menu-item">
-                  <span className="mobile-menu-icon">📥</span>
+                  <span className="mobile-menu-icon"><i className="fas fa-download" aria-hidden="true"></i></span>
                   Export Requests
                 </button>
               </div>
@@ -578,6 +582,10 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
                 </div>
                 <div className="modal-body">
                   <div className="detail-row">
+                    <span className="detail-label">Request ID:</span>
+                    <span className="detail-value">{selectedRequest.id ?? 'N/A'}</span>
+                  </div>
+                  <div className="detail-row">
                     <span className="detail-label">Employee:</span>
                     <span className="detail-value">{selectedRequest.employeeName}</span>
                   </div>
@@ -588,6 +596,10 @@ export default function HRReview({ onBack, onViewRecords, onRegisterEmployee, on
                   <div className="detail-row">
                     <span className="detail-label">Item:</span>
                     <span className="detail-value">{selectedRequest.itemName}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Item ID:</span>
+                    <span className="detail-value">{selectedRequest.itemId || 'N/A'}</span>
                   </div>
                   <div className="detail-row">
                     <span className="detail-label">Category:</span>

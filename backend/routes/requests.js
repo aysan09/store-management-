@@ -43,7 +43,9 @@ router.get('/', async (req, res) => {
     const [rows] = await db.execute(
       `SELECT 
         r.id,
+        r.employee_id AS employeeId,
         r.employee_name AS employeeName,
+        r.item_id AS itemId,
         r.item_name AS itemName,
         r.item_brand AS itemBrand,
         r.quantity,
@@ -119,9 +121,11 @@ router.get('/status/:status', async (req, res) => {
 
     // Get requests with pagination
     const [rows] = await db.execute(
-      `SELECT 
+      `SELECT
         r.id,
+        r.employee_id AS employeeId,
         r.employee_name AS employeeName,
+        r.item_id AS itemId,
         r.item_name AS itemName,
         r.item_brand AS itemBrand,
         r.quantity,
@@ -235,18 +239,20 @@ router.post('/', validateRequest, async (req, res) => {
     // Insert request using the actual database schema
     const [result] = await connection.execute(
       `INSERT INTO requests (
-        employee_name, item_name, item_brand, quantity, purpose, status
-      ) VALUES (?, ?, ?, ?, ?, ?)`,
-      [employeeName, itemName, itemBrand, quantity, purpose || null, 'Pending']
+        employee_id, employee_name, item_id, item_name, item_brand, quantity, purpose, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [employeeRows[0].id, employeeName, item.id, itemName, itemBrand, quantity, purpose || null, 'Pending']
     );
 
     await connection.commit();
 
     // Get the created request
     const [createdRequestRows] = await db.execute(
-      `SELECT 
+      `SELECT
         r.id,
+        r.employee_id AS employeeId,
         r.employee_name AS employeeName,
+        r.item_id AS itemId,
         r.item_name AS itemName,
         r.item_brand AS itemBrand,
         r.quantity,
@@ -361,7 +367,9 @@ router.put('/:id/approve', validateId('id'), async (req, res) => {
     const [updatedRows] = await db.execute(
       `SELECT 
         r.id,
+        r.employee_id AS employeeId,
         r.employee_name AS employeeName,
+        r.item_id AS itemId,
         r.item_name AS itemName,
         r.item_brand AS itemBrand,
         r.quantity,
@@ -502,8 +510,8 @@ router.put('/:id/finish', validateId('id'), async (req, res) => {
 
     // Mark the request finished only after its stock has been deducted.
     await connection.execute(
-      `UPDATE requests 
-       SET status = 'finished', 
+      `UPDATE requests
+       SET status = 'finished',
            date_finished = NOW(),
            updated_at = NOW()
        WHERE id = ?`,
@@ -514,9 +522,11 @@ router.put('/:id/finish', validateId('id'), async (req, res) => {
 
     // Get the updated request
     const [updatedRows] = await db.execute(
-      `SELECT 
+      `SELECT
         r.id,
+        r.employee_id AS employeeId,
         r.employee_name AS employeeName,
+        r.item_id AS itemId,
         r.item_name AS itemName,
         r.item_brand AS itemBrand,
         r.quantity,
@@ -607,8 +617,8 @@ router.put('/:id/reject', validateId('id'), async (req, res) => {
 
     // Update status to rejected
     await connection.execute(
-      `UPDATE requests 
-       SET status = 'rejected', 
+      `UPDATE requests
+       SET status = 'rejected',
            updated_at = NOW()
        WHERE id = ?`,
       [requestId]
@@ -618,9 +628,11 @@ router.put('/:id/reject', validateId('id'), async (req, res) => {
 
     // Get the updated request
     const [updatedRows] = await db.execute(
-      `SELECT 
+      `SELECT
         r.id,
+        r.employee_id AS employeeId,
         r.employee_name AS employeeName,
+        r.item_id AS itemId,
         r.item_name AS itemName,
         r.item_brand AS itemBrand,
         r.quantity,
@@ -687,9 +699,11 @@ router.get('/export', async (req, res) => {
 
     // Get all requests (no pagination for export)
     const [rows] = await db.execute(
-      `SELECT 
+      `SELECT
         r.id,
+        r.employee_id AS employeeId,
         r.employee_name AS employeeName,
+        r.item_id AS itemId,
         r.item_name AS itemName,
         r.item_brand AS itemBrand,
         r.quantity,
@@ -712,7 +726,9 @@ router.get('/export', async (req, res) => {
     // Define columns
     worksheet.columns = [
       { header: 'ID', key: 'id', width: 10 },
+      { header: 'Employee ID', key: 'employeeId', width: 14 },
       { header: 'Employee Name', key: 'employeeName', width: 20 },
+      { header: 'Item ID', key: 'itemId', width: 10 },
       { header: 'Item Name', key: 'itemName', width: 20 },
       { header: 'Item Brand', key: 'itemBrand', width: 15 },
       { header: 'Quantity', key: 'quantity', width: 10 },
@@ -727,7 +743,9 @@ router.get('/export', async (req, res) => {
     rows.forEach(row => {
       worksheet.addRow({
         id: row.id,
+        employeeId: row.employeeId ?? '',
         employeeName: row.employeeName,
+        itemId: row.itemId ?? '',
         itemName: row.itemName,
         itemBrand: row.itemBrand,
         quantity: row.quantity,

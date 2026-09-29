@@ -2,10 +2,10 @@ import React, { useState, useEffect } from "react";
 import { getImageUrl } from "./config";
 import { 
   Search, Package, CheckCircle, AlertTriangle, 
-  XCircle, Edit2, Trash2, Send, Plus,
+  XCircle, Edit2, Trash2, Send,
   X as CloseIcon, CheckCircle as SuccessIcon,
   XCircle as ErrorIcon, AlertTriangle as WarningIcon,
-  Bell, Mail, Eye, Trash2 as TrashIcon, Menu, Download
+  Bell, Mail, Eye, Trash2 as TrashIcon, Menu
 } from 'lucide-react';
 import './styles/store-manager-styles.css';
 import './styles/enhanced-modals-styles.css';
@@ -255,6 +255,73 @@ export default function StoreManagerPage({
     }
   };
 
+  // Handle marking a request as finished from the confirmation modal
+  const handleFinishConfirm = async () => {
+    if (!itemToFinish) return;
+
+    if (!itemToFinish.hasSufficientStock) {
+      addToast('warning', 'Cannot mark as finished: insufficient stock available');
+      return;
+    }
+
+    // Use the request ID directly from the itemToFinish object
+    const requestId = itemToFinish.id;
+
+    if (!requestId) {
+      addToast('error', 'Request ID not found');
+      return;
+    }
+
+    setIsFinishing(true);
+
+    try {
+      // Call the finish endpoint directly with the request ID
+      const finishResponse = await fetch(`/api/requests/${requestId}/finish`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      const finishResult = await finishResponse.json();
+
+      if (finishResult.success) {
+        // Update local inventory
+        setInventory(prev => prev.map(item =>
+          item.model === itemToFinish.itemName
+            ? { ...item, quantity: item.quantity - itemToFinish.quantity }
+            : item
+        ));
+
+        // Show success toast
+        addToast('success', `✅ Request marked as finished! ${itemToFinish.quantity} ${itemToFinish.itemName}(s) have been deducted from inventory.`);
+
+        // Close modal
+        setShowFinishConfirm(false);
+        setItemToFinish(null);
+
+        // Refresh the approved requests list
+        fetchApprovedRequests();
+      } else {
+        // Handle specific error messages from backend
+        if (finishResult.error && finishResult.error.code === 'REQUEST_NOT_FOUND') {
+          addToast('error', 'Request not found. It may have been already processed.');
+        } else if (finishResult.error && finishResult.error.code === 'REQUEST_ALREADY_FINISHED') {
+          addToast('warning', 'This request has already been finished.');
+        } else if (finishResult.error && finishResult.error.code === 'REQUEST_NOT_APPROVED') {
+          addToast('warning', 'Only approved requests can be finished.');
+        } else {
+          addToast('error', finishResult.message || 'Failed to mark request as finished');
+        }
+      }
+    } catch (error) {
+      console.error('Error marking request as finished:', error);
+      addToast('error', 'Connection error. Please check your connection.');
+    } finally {
+      setIsFinishing(false);
+    }
+  };
+
   // Handle delete confirmation
   const handleDeleteConfirm = async () => {
     try {
@@ -316,29 +383,33 @@ export default function StoreManagerPage({
       setApprovedRequestsLoading(true);
       const response = await fetch('/api/requests');
       const result = await response.json();
-      
+
       console.log('API Response:', result); // Debug log
-      
+
       if (result.success) {
         // Filter for approved requests only (case-insensitive)
-        const approved = result.data.requests.filter(req => req.status.toLowerCase() === 'approved');
-        
+        const approved = result.data.requests.filter(req => (req.status || '').toLowerCase() === 'approved');
+
         console.log('Approved requests from API:', approved); // Debug log
-        
-        // Transform data to match frontend format
+
+        // Transform data to match frontend format, keeping the database IDs
         const transformedRequests = approved.map(req => ({
+          id: req.id,
+          employeeId: req.employeeId ?? null,
           employeeName: req.employeeName,
+          itemId: req.itemId ?? null,
           itemName: req.itemName,
           itemBrand: req.itemBrand || 'N/A', // Ensure brand is included
           quantity: req.quantity,
           purpose: req.purpose,
+          status: req.status,
           dateAdded: req.dateAdded,
           dateApproved: req.dateApproved,
-          id: req.id
+          dateFinished: req.dateFinished
         }));
-        
+
         console.log('Transformed requests:', transformedRequests); // Debug log
-        
+
         setApprovedRequestsState(transformedRequests);
       }
     } catch (error) {
@@ -376,7 +447,7 @@ export default function StoreManagerPage({
       await fetch(`/api/notifications/${notificationId}/read`, {
         method: 'PUT'
       });
-      setNotifications(prev => prev.map(n => 
+      setNotifications(prev => prev.map(n =>
         n.id === notificationId ? { ...n, read: true } : n
       ));
     } catch (error) {
@@ -411,11 +482,11 @@ export default function StoreManagerPage({
     try {
       addToast('info', 'Exporting items to Excel...');
       const response = await fetch('/api/items/export');
-      
+
       if (!response.ok) {
         throw new Error('Export failed');
       }
-      
+
       // Create blob from response and download
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -426,7 +497,7 @@ export default function StoreManagerPage({
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-      
+
       addToast('success', 'Items exported successfully!');
     } catch (error) {
       console.error('Error exporting items:', error);
@@ -465,7 +536,7 @@ export default function StoreManagerPage({
           <h1><span className="title-icon">📦</span> Store Inventory Management</h1>
           <p className="subtitle">Manage and track all inventory items</p>
         </div>
-        
+
         {/* Desktop Header Actions */}
         <div className="header-actions desktop-header-actions">
           <div
@@ -481,18 +552,25 @@ export default function StoreManagerPage({
               </span>
             )}
           </div>
-          <button onClick={onBack} className="btn-edit-del">Logout</button>
-          <button onClick={onAddItem} className="btn-request">
-            <Plus size={18} /> New Item
+          <button onClick={onBack} className="btn-edit-del" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <i className="fas fa-sign-out-alt" aria-hidden="true"></i> Logout
           </button>
-          <button onClick={onViewFinished} className="btn-edit-del">
-            View Finished Requests
+          <button onClick={onAddItem} className="btn-request" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <i className="fas fa-plus" aria-hidden="true"></i> New Item
           </button>
-          <button onClick={refreshInventory} className="btn-request">
-            Refresh Data
+          <button onClick={onViewFinished} className="btn-edit-del" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <i className="fas fa-clipboard-check" aria-hidden="true"></i> View Finished Requests
+          </button>
+          <button
+            onClick={refreshInventory}
+            className="btn-request icon-only-btn"
+            title="Refresh Data"
+            aria-label="Refresh Data"
+          >
+            <i className="fas fa-sync-alt" aria-hidden="true"></i>
           </button>
           <button onClick={handleExportItems} className="btn-request" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Download size={18} /> Export Items
+            <i className="fas fa-download" aria-hidden="true"></i> Export Items
           </button>
         </div>
 
@@ -513,8 +591,8 @@ export default function StoreManagerPage({
               )}
             </div>
           </div>
-          <button 
-            className="hamburger-btn" 
+          <button
+            className="hamburger-btn"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             aria-label="Toggle menu"
           >
@@ -527,8 +605,8 @@ export default function StoreManagerPage({
           <div className="mobile-menu-dropdown">
             <div className="mobile-menu-header">
               <span>Menu</span>
-              <button 
-                className="mobile-menu-close" 
+              <button
+                className="mobile-menu-close"
                 onClick={() => setIsMobileMenuOpen(false)}
                 aria-label="Close menu"
               >
@@ -537,23 +615,23 @@ export default function StoreManagerPage({
             </div>
             <div className="mobile-menu-items">
               <button onClick={() => { onBack(); setIsMobileMenuOpen(false); }} className="mobile-menu-item">
-                <span className="mobile-menu-icon">🚪</span>
+                <span className="mobile-menu-icon"><i className="fas fa-sign-out-alt" aria-hidden="true"></i></span>
                 Logout
               </button>
               <button onClick={() => { onAddItem(); setIsMobileMenuOpen(false); }} className="mobile-menu-item">
-                <span className="mobile-menu-icon">➕</span>
+                <span className="mobile-menu-icon"><i className="fas fa-plus" aria-hidden="true"></i></span>
                 New Item
               </button>
               <button onClick={() => { onViewFinished(); setIsMobileMenuOpen(false); }} className="mobile-menu-item">
-                <span className="mobile-menu-icon">📋</span>
+                <span className="mobile-menu-icon"><i className="fas fa-clipboard-check" aria-hidden="true"></i></span>
                 View Finished Requests
               </button>
               <button onClick={() => { refreshInventory(); setIsMobileMenuOpen(false); }} className="mobile-menu-item">
-                <span className="mobile-menu-icon">🔄</span>
+                <span className="mobile-menu-icon"><i className="fas fa-sync-alt" aria-hidden="true"></i></span>
                 Refresh Data
               </button>
               <button onClick={() => { handleExportItems(); setIsMobileMenuOpen(false); }} className="mobile-menu-item">
-                <span className="mobile-menu-icon">📥</span>
+                <span className="mobile-menu-icon"><i className="fas fa-download" aria-hidden="true"></i></span>
                 Export Items
               </button>
             </div>
@@ -599,7 +677,7 @@ export default function StoreManagerPage({
                   </div>
                   <div className="notification-actions">
                     {!notification.read && (
-                      <button 
+                      <button
                         onClick={() => handleMarkAsRead(notification.id)}
                         className="mark-read-btn"
                         title="Mark as read"
@@ -607,7 +685,7 @@ export default function StoreManagerPage({
                         <Eye size={16} />
                       </button>
                     )}
-                    <button 
+                    <button
                       onClick={() => handleDeleteNotification(notification.id)}
                       className="delete-notification-btn"
                       title="Delete notification"
@@ -625,23 +703,23 @@ export default function StoreManagerPage({
       {/* Summary Cards */}
       <section className="stats-grid">
         <StatCard icon={<Package />} label="Total Products" value={inventory.length} type="total" />
-        <StatCard 
-          icon={<CheckCircle />} 
-          label="In Stock" 
-          value={inventory.filter(item => item.quantity > 5).length} 
-          type="in-stock" 
+        <StatCard
+          icon={<CheckCircle />}
+          label="In Stock"
+          value={inventory.filter(item => item.quantity > 5).length}
+          type="in-stock"
         />
-        <StatCard 
-          icon={<AlertTriangle />} 
-          label="Low Stock" 
-          value={inventory.filter(item => item.quantity > 0 && item.quantity <= 5).length} 
-          type="low-stock" 
+        <StatCard
+          icon={<AlertTriangle />}
+          label="Low Stock"
+          value={inventory.filter(item => item.quantity > 0 && item.quantity <= 5).length}
+          type="low-stock"
         />
-        <StatCard 
-          icon={<XCircle />} 
-          label="Out of Stock" 
-          value={inventory.filter(item => item.quantity === 0).length} 
-          type="out-of-stock" 
+        <StatCard
+          icon={<XCircle />}
+          label="Out of Stock"
+          value={inventory.filter(item => item.quantity === 0).length}
+          type="out-of-stock"
         />
       </section>
 
@@ -685,8 +763,8 @@ export default function StoreManagerPage({
           <tbody>
             {currentItems.length > 0 ? (
               currentItems.map((item) => (
-                <tr 
-                  key={item.id} 
+                <tr
+                  key={item.id}
                   className={item.quantity === 0 ? 'row-out-of-stock' : ''}
                   style={{ transition: 'all 0.3s ease' }}
                 >
@@ -702,16 +780,16 @@ export default function StoreManagerPage({
                   </td>
                   <td>
                     <div className="action-btns">
-                      <button 
-                        className="btn-edit-del" 
+                      <button
+                        className="btn-edit-del"
                         onClick={() => handleEditClick(item)}
                         title="Edit item"
                         style={{ transition: 'all 0.2s ease' }}
                       >
                         <Edit2 size={14}/>
                       </button>
-                      <button 
-                        className="btn-edit-del" 
+                      <button
+                        className="btn-edit-del"
                         onClick={() => handleDeleteClick(item)}
                         title="Delete item"
                         style={{ transition: 'all 0.2s ease' }}
@@ -747,7 +825,7 @@ export default function StoreManagerPage({
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="pagination-controls">
-          <button 
+          <button
             className="page-btn"
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
@@ -765,7 +843,7 @@ export default function StoreManagerPage({
               </button>
             ))}
           </div>
-          <button 
+          <button
             className="page-btn"
             onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
@@ -782,13 +860,14 @@ export default function StoreManagerPage({
             Approved Requests
           </h2>
           <div className="approved-requests-actions">
-            <button 
-              className="btn-request"
+            <button
+              className="btn-request icon-only-btn"
               onClick={fetchApprovedRequests}
               disabled={approvedRequestsLoading}
-              style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+              title="Refresh Requests"
+              aria-label="Refresh Requests"
             >
-              {approvedRequestsLoading ? 'Refreshing...' : 'Refresh Requests'}
+              <i className={`fas fa-sync-alt ${approvedRequestsLoading ? 'spinning' : ''}`} aria-hidden="true"></i>
             </button>
             <span className="approved-count">
               {approvedRequestsState.length} approved request{approvedRequestsState.length !== 1 ? 's' : ''}
@@ -800,7 +879,10 @@ export default function StoreManagerPage({
             <table className="main-table">
               <thead>
               <tr>
+                <th>Request ID</th>
+                <th>Employee ID</th>
                 <th>Employee</th>
+                <th>Item ID</th>
                 <th>Item</th>
                 <th>Brand</th>
                 <th>Purpose</th>
@@ -814,7 +896,10 @@ export default function StoreManagerPage({
               <tbody>
                 {approvedRequestsState.map((request, index) => (
                 <tr key={request.id || index}>
+                    <td>{request.id ?? '-'}</td>
+                    <td>{request.employeeId ?? '-'}</td>
                     <td>{request.employeeName || 'Unknown Employee'}</td>
+                    <td>{request.itemId ?? '-'}</td>
                     <td>{request.itemName || 'Unknown Item'}</td>
                     <td>{request.itemBrand || 'No Brand'}</td>
                     <td>{request.purpose || 'No Purpose Specified'}</td>
@@ -828,7 +913,7 @@ export default function StoreManagerPage({
                     </td>
                     <td>
                       <div className="action-btns">
-                        <button 
+                        <button
                           className="btn-request"
                           onClick={async () => {
                             try {
@@ -838,18 +923,18 @@ export default function StoreManagerPage({
                                 addToast('error', 'Failed to fetch inventory data');
                                 return;
                               }
-                              
+
                               const itemsResult = await itemsResponse.json();
                               console.log('Items API Response:', itemsResult); // Debug log
-                              
+
                               if (!itemsResult.success) {
                                 addToast('error', 'Failed to fetch inventory data');
                                 return;
                               }
-                              
+
                               // Handle different possible API response structures
                               let itemsArray = [];
-                              
+
                               // Try different possible structures
                               if (itemsResult.data && Array.isArray(itemsResult.data)) {
                                 // Structure: {success: true, data: [...]}
@@ -864,22 +949,22 @@ export default function StoreManagerPage({
                                 addToast('error', 'Unexpected API response format');
                                 return;
                               }
-                              
+
                               // Find the item by both name and brand in the server data
-                              const serverItem = itemsArray.find(item => 
+                              const serverItem = itemsArray.find(item =>
                                 item.model === request.itemName && item.brand === request.itemBrand
                               );
-                              
+
                               if (!serverItem) {
                                 addToast('warning', `Item "${request.itemName}" by "${request.itemBrand}" not found in inventory. Please add this item to inventory first.`);
                                 return;
                               }
-                              
+
                               // Use the current quantity from the server
                               const currentQuantity = Number(serverItem.quantity) || 0;
                               const requestedQuantity = Number(request.quantity) || 0;
                               const hasSufficientStock = currentQuantity >= requestedQuantity;
-                              
+
                               setItemToFinish({
                                 ...request,
                                 quantity: requestedQuantity,
@@ -887,7 +972,7 @@ export default function StoreManagerPage({
                                 hasSufficientStock
                               });
                               setShowFinishConfirm(true);
-                              
+
                             } catch (error) {
                               console.error('Error fetching current stock:', error);
                               addToast('error', 'Connection error. Please check your connection.');
@@ -965,8 +1050,8 @@ export default function StoreManagerPage({
                 </div>
               </div>
               <div className="modal-actions">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className="cancel-btn"
                   onClick={() => {
                     setEditingItem(null);
@@ -975,8 +1060,8 @@ export default function StoreManagerPage({
                 >
                   Cancel
                 </button>
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   className="save-btn"
                 >
                   Save Changes
@@ -1008,7 +1093,7 @@ export default function StoreManagerPage({
               </div>
             </div>
             <div className="modal-actions">
-              <button 
+              <button
                 className="cancel-btn"
                 onClick={() => {
                   setShowDeleteConfirm(false);
@@ -1017,7 +1102,7 @@ export default function StoreManagerPage({
               >
                 Cancel
               </button>
-              <button 
+              <button
                 className="delete-btn"
                 onClick={handleDeleteConfirm}
               >
@@ -1043,14 +1128,14 @@ export default function StoreManagerPage({
             <p className="message-text">{messageContent.message}</p>
             <div className="message-actions">
               {messageContent.showRetry && (
-                <button 
+                <button
                   className="btn-request"
                   onClick={() => handleMessageAction('retry')}
                 >
                   Try Again
                 </button>
               )}
-              <button 
+              <button
                 className="btn-edit-del"
                 onClick={() => handleMessageAction('cancel')}
               >
@@ -1073,8 +1158,16 @@ export default function StoreManagerPage({
             <div className="finish-confirmation-content">
               <div className="request-details">
                 <div className="detail-row">
+                  <span className="detail-label">Request ID:</span>
+                  <span className="detail-value">{itemToFinish.id ?? 'N/A'}</span>
+                </div>
+                <div className="detail-row">
                   <span className="detail-label">Employee:</span>
                   <span className="detail-value">{itemToFinish.employeeName}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Employee ID:</span>
+                  <span className="detail-value">{itemToFinish.employeeId ?? 'N/A'}</span>
                 </div>
                 <div className="detail-row">
                   <span className="detail-label">Item:</span>
@@ -1093,7 +1186,7 @@ export default function StoreManagerPage({
                   <span className="detail-value purpose-detail">{itemToFinish.purpose}</span>
                 </div>
               </div>
-              
+
               {itemToFinish.itemInInventory && (
                 <div className="inventory-status">
                   <div className="inventory-header">
@@ -1120,7 +1213,7 @@ export default function StoreManagerPage({
                   </div>
                 </div>
               )}
-              
+
               {!itemToFinish.hasSufficientStock && (
                 <div className="stock-warning">
                   <div className="warning-icon">⚠️</div>
@@ -1132,85 +1225,22 @@ export default function StoreManagerPage({
               )}
             </div>
             <div className="modal-actions">
-              <button 
+              <button
                 className="cancel-btn"
                 onClick={() => {
                   setShowFinishConfirm(false);
                   setItemToFinish(null);
                 }}
+                disabled={isFinishing}
               >
                 Cancel
               </button>
-              <button 
+              <button
                 className={`save-btn ${!itemToFinish.hasSufficientStock ? 'disabled' : ''}`}
-                onClick={async () => {
-                  if (!itemToFinish.hasSufficientStock) {
-                    addToast('warning', 'Cannot mark as finished: insufficient stock available');
-                    return;
-                  }
-                  
-                  try {
-                    // Use the request ID directly from the itemToFinish object
-                    const requestId = itemToFinish.id;
-                    
-                    if (!requestId) {
-                      addToast('error', 'Request ID not found');
-                      return;
-                    }
-                    
-                    // Call the finish endpoint directly with the request ID
-                    console.log('Making PUT request to:', `/api/requests/${requestId}/finish`); // Debug log
-                    const finishResponse = await fetch(`/api/requests/${requestId}/finish`, {
-                      method: 'PUT',
-                      headers: {
-                        'Content-Type': 'application/json',
-                      }
-                    });
-                    
-                    console.log('Finish request response status:', finishResponse.status); // Debug log
-                    console.log('Finish request response headers:', finishResponse.headers); // Debug log
-                    
-                    const finishResult = await finishResponse.json();
-                    console.log('Finish request response data:', finishResult); // Debug log
-                    console.log('Finish request error details:', finishResult.error); // Debug log
-                    
-                    if (finishResult.success) {
-                      // Update local inventory
-                      setInventory(prev => prev.map(item => 
-                        item.model === itemToFinish.itemName 
-                          ? { ...item, quantity: item.quantity - itemToFinish.quantity }
-                          : item
-                      ));
-                      
-                      // Show success toast
-                      addToast('success', `✅ Request marked as finished! ${itemToFinish.quantity} ${itemToFinish.itemName}(s) have been deducted from inventory.`);
-                      
-                      // Close modal
-                      setShowFinishConfirm(false);
-                      setItemToFinish(null);
-                      
-                      // Refresh the approved requests list
-                      fetchApprovedRequests();
-                    } else {
-                      // Handle specific error messages from backend
-                      if (finishResult.error && finishResult.error.code === 'REQUEST_NOT_FOUND') {
-                        addToast('error', 'Request not found. It may have been already processed.');
-                      } else if (finishResult.error && finishResult.error.code === 'REQUEST_ALREADY_FINISHED') {
-                        addToast('warning', 'This request has already been finished.');
-                      } else if (finishResult.error && finishResult.error.code === 'REQUEST_NOT_APPROVED') {
-                        addToast('warning', 'Only approved requests can be finished.');
-                      } else {
-                        addToast('error', finishResult.message || 'Failed to mark request as finished');
-                      }
-                    }
-                  } catch (error) {
-                    console.error('Error marking request as finished:', error);
-                    addToast('error', 'Connection error. Please check your connection.');
-                  }
-                }}
-                disabled={!itemToFinish.hasSufficientStock}
+                onClick={handleFinishConfirm}
+                disabled={!itemToFinish.hasSufficientStock || isFinishing}
               >
-                {itemToFinish.hasSufficientStock ? 'Mark as Finished' : 'Insufficient Stock'}
+                {isFinishing ? 'Finishing...' : (itemToFinish.hasSufficientStock ? 'Mark as Finished' : 'Insufficient Stock')}
               </button>
             </div>
           </div>

@@ -15,6 +15,7 @@ export default function EmployeeRegistration({ onBack, onAddEmployee }) {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   // Hover states for animated interactive feedback
   const [isBackHovered, setIsBackHovered] = useState(false);
@@ -48,9 +49,9 @@ export default function EmployeeRegistration({ onBack, onAddEmployee }) {
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     if (!form.name || !form.department || !form.position || !form.employee_Id || !form.password) {
       notifyWarning("Please fill in all required fields");
       return;
@@ -61,6 +62,21 @@ export default function EmployeeRegistration({ onBack, onAddEmployee }) {
       return;
     }
 
+    if (form.password.length < 6) {
+      notifyWarning("Password must be at least 6 characters long");
+      return;
+    }
+
+    // All fields valid - open the interactive confirmation modal
+    setShowConfirmModal(true);
+  };
+
+  const closeConfirmModal = () => {
+    if (loading) return;
+    setShowConfirmModal(false);
+  };
+
+  const confirmRegistration = async () => {
     setLoading(true);
 
     try {
@@ -98,6 +114,7 @@ export default function EmployeeRegistration({ onBack, onAddEmployee }) {
 
         setEmployees([...employees, newEmployee]);
         onAddEmployee(newEmployee);
+        setShowConfirmModal(false);
         
         // Reset form
         setForm({
@@ -436,6 +453,79 @@ export default function EmployeeRegistration({ onBack, onAddEmployee }) {
             </div>
           </div>
         </div>
+
+        {/* Registration Confirmation Modal */}
+        {showConfirmModal && (
+          <div className="password-modal-overlay" onClick={closeConfirmModal}>
+            <div className="password-modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h3>Confirm Registration</h3>
+                <button
+                  type="button"
+                  className="modal-close"
+                  onClick={closeConfirmModal}
+                  disabled={loading}
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="modal-body">
+                <p className="delete-confirm-message">
+                  Please review the details before registering this employee.
+                </p>
+
+                <div className="registration-confirm-details">
+                  <div className="confirm-detail-row">
+                    <span className="confirm-detail-label">Name</span>
+                    <span className="confirm-detail-value">{form.name}</span>
+                  </div>
+                  <div className="confirm-detail-row">
+                    <span className="confirm-detail-label">Employee ID</span>
+                    <span className="confirm-detail-value">{form.employee_Id}</span>
+                  </div>
+                  <div className="confirm-detail-row">
+                    <span className="confirm-detail-label">Position</span>
+                    <span className="confirm-detail-value">{form.position}</span>
+                  </div>
+                  <div className="confirm-detail-row">
+                    <span className="confirm-detail-label">Department</span>
+                    <span className="confirm-detail-value">{form.department}</span>
+                  </div>
+                </div>
+
+                <div className="modal-actions">
+                  <button
+                    type="button"
+                    className="action-btn cancel-btn"
+                    onClick={closeConfirmModal}
+                    disabled={loading}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="action-btn reset-btn"
+                    onClick={confirmRegistration}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <>
+                        <span style={{ display: 'inline-block', animation: 'registrationSpin 1s linear infinite' }}>⏳</span>
+                        <span>Registering...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>✓</span>
+                        <span>Confirm &amp; Register</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

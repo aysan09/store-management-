@@ -159,7 +159,7 @@ export default function StorePage({ onBack, onRequest, items, isManager = false,
                   <img src={getImageUrl(item.photo)} alt={item.model} style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '8px' }} />
                 </td>
                 <td className="model-cell start-at-center">
-                  <span className="product-model-label">Model</span>
+                  <span className="product-model-label"></span>
                   <span className="product-model-value">{item.model}</span>
                 </td>
                 <td className="brand-cell start-at-center">{item.brand}</td>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Download } from 'lucide-react';
 import "./styles.css";
 import { notifySuccess, notifyError, notifyWarning, notifyInfo } from './utils/toastUtils';
 
@@ -15,6 +16,9 @@ export default function HREmployees({ onBack }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('name');
   const [sortOrder, setSortOrder] = useState('asc');
+  const [employeeToDelete, setEmployeeToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     loadEmployees();
@@ -38,9 +42,22 @@ export default function HREmployees({ onBack }) {
     }
   };
 
+  // Safe handler for back button
+  const handleBackClick = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (typeof onBack === 'function') {
+      onBack();
+    } else {
+      console.warn('onBack prop was not provided to HREmployees component.');
+    }
+  };
+
   const handleResetPassword = async (e) => {
     e.preventDefault();
-    
+
     if (!resetPasswordForm.newPassword || !resetPasswordForm.confirmPassword) {
       notifyWarning('Please enter both new password and confirm password');
       return;
@@ -75,7 +92,6 @@ export default function HREmployees({ onBack }) {
           newPassword: '',
           confirmPassword: ''
         });
-        // Refresh employee list
         loadEmployees();
       } else {
         const errorData = await response.json();
@@ -87,19 +103,27 @@ export default function HREmployees({ onBack }) {
     }
   };
 
-  const handleDeleteEmployee = async (employeeId) => {
-    if (!window.confirm('Are you sure you want to delete this employee? This action cannot be undone.')) {
-      return;
-    }
+  const handleDeleteEmployee = (employee) => {
+    setEmployeeToDelete(employee);
+  };
 
+  const closeDeleteConfirm = () => {
+    if (isDeleting) return;
+    setEmployeeToDelete(null);
+  };
+
+  const confirmDeleteEmployee = async () => {
+    if (!employeeToDelete) return;
+
+    setIsDeleting(true);
     try {
-      const response = await fetch(`/api/employees/${employeeId}`, {
+      const response = await fetch(`/api/employees/${employeeToDelete.id}`, {
         method: 'DELETE'
       });
 
       if (response.ok) {
         notifySuccess('Employee deleted successfully');
-        // Refresh employee list
+        setEmployeeToDelete(null);
         loadEmployees();
       } else {
         const errorData = await response.json();
@@ -108,6 +132,8 @@ export default function HREmployees({ onBack }) {
     } catch (error) {
       console.error('Error deleting employee:', error);
       notifyError('Error deleting employee. Please check if the server is running.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -120,16 +146,70 @@ export default function HREmployees({ onBack }) {
     }
   };
 
+  const handleExportEmployees = async () => {
+    if (isExporting) return;
+    setIsExporting(true);
+    try {
+      notifySuccess('Exporting employees to Excel...');
+      // Prefer a server-side Excel export when available, otherwise fall back to CSV.
+      const response = await fetch('/api/employees/export');
+      if (response.ok) {
+        const contentType = response.headers.get('content-type') || '';
+        const isExcel = contentType.includes('spreadsheet') || contentType.includes('octet-stream');
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `employees_export_${new Date().toISOString().split('T')[0]}.${isExcel ? 'xlsx' : 'csv'}`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+        notifySuccess('Employees exported successfully!');
+        return;
+      }
+      throw new Error('Export endpoint unavailable');
+    } catch (error) {
+      console.warn('Server employee export unavailable, using CSV fallback:', error);
+      try {
+        const headers = ['Employee Name', 'Department', 'Position', 'Employee ID', 'Date Created'];
+        const escapeCsv = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+        const rows = filteredEmployees.map(employee => [
+          employee.name,
+          employee.department,
+          employee.position,
+          employee.employee_id,
+          employee.date_created || ''
+        ].map(escapeCsv).join(','));
+        const csv = [headers.map(escapeCsv).join(','), ...rows].join('\r\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `employees_export_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+        notifySuccess('Employees exported as CSV.');
+      } catch (fallbackError) {
+        console.error('Employee CSV export failed:', fallbackError);
+        notifyError('Failed to export employees');
+      }
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const sortedEmployees = [...employees].sort((a, b) => {
     let aValue = a[sortBy];
     let bValue = b[sortBy];
-    
-    // Handle date sorting
+
     if (sortBy === 'date_created') {
       aValue = new Date(aValue);
       bValue = new Date(bValue);
     }
-    
+
     if (sortOrder === 'asc') {
       return aValue > bValue ? 1 : -1;
     } else {
@@ -146,18 +226,51 @@ export default function HREmployees({ onBack }) {
 
   return (
     <div className="employee-management-page">
-        <header className="employee-management-header">
-          <div className="header-content">
-            <button className="back-btn employee-back-btn" onClick={onBack}>← Back</button>
+      <header className="employee-management-header">
+        <div className="header-topline">
+          {/* Added type="button" and handleBackClick wrapper */}
+          <button
+            type="button"
+            className="back-btn employee-back-btn"
+            onClick={handleBackClick}
+          >
+            ← Back
+          </button>
+          <span className="header-eyebrow">HR Portal</span>
+        </div>
+
+        <div className="header-content">
           <div className="header-info">
             <h1 className="management-title">Employee Management</h1>
             <p className="management-subtitle">Manage employee accounts and access</p>
           </div>
+
           <div className="header-stats">
             <div className="stat-card">
-              <span className="stat-number">{employees.length}</span>
-              <span className="stat-label">Total Employees</span>
+              <span className="stat-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+              </span>
+              <div className="stat-content">
+                <span className="stat-number">{employees.length}</span>
+                <span className="stat-label">Total Employees</span>
+              </div>
             </div>
+            <button
+              type="button"
+              className="hr-records-export-btn export-btn"
+              onClick={handleExportEmployees}
+              disabled={isExporting || filteredEmployees.length === 0}
+              title="Export employees"
+              aria-label="Export employees"
+            >
+              <Download className="export-icon" aria-hidden="true" />
+              <span>{isExporting ? 'Exporting...' : 'Export'}</span>
+            </button>
           </div>
         </div>
       </header>
@@ -179,12 +292,13 @@ export default function HREmployees({ onBack }) {
             <span className="sort-label">Sort by:</span>
             {['name', 'department', 'position', 'date_created'].map((field) => (
               <button
+                type="button"
                 key={field}
                 className={`sort-btn ${sortBy === field ? 'active' : ''}`}
                 onClick={() => handleSort(field)}
               >
-                {field === 'name' ? 'Name' : 
-                 field === 'department' ? 'Department' : 
+                {field === 'name' ? 'Name' :
+                 field === 'department' ? 'Department' :
                  field === 'position' ? 'Position' : 'Date Created'}
                 {sortBy === field && (
                   <span>{sortOrder === 'asc' ? ' ↑' : ' ↓'}</span>
@@ -264,14 +378,13 @@ export default function HREmployees({ onBack }) {
                 </div>
                 <div className="action-cell">
                   <div className="employee-actions">
-                    <button 
+                    <button
+                      type="button"
                       className={`action-btn password-btn ${showPassword && selectedEmployee?.id === employee.id ? 'active' : ''}`}
                       onClick={() => {
                         if (showPassword && selectedEmployee?.id === employee.id) {
-                          // Close the modal if already open for this employee
                           setShowPassword(false);
                         } else {
-                          // Open the modal for this employee
                           setSelectedEmployee(employee);
                           setShowPassword(true);
                         }
@@ -279,9 +392,10 @@ export default function HREmployees({ onBack }) {
                     >
                       {showPassword && selectedEmployee?.id === employee.id ? 'Hide Password' : 'Reset Password'}
                     </button>
-                    <button 
+                    <button
+                      type="button"
                       className="action-btn delete-btn"
-                      onClick={() => handleDeleteEmployee(employee.id)}
+                      onClick={() => handleDeleteEmployee(employee)}
                     >
                       Delete Employee
                     </button>
@@ -299,6 +413,7 @@ export default function HREmployees({ onBack }) {
               <div className="modal-header">
                 <h3>Manage Password for {selectedEmployee.name}</h3>
                 <button 
+                  type="button"
                   className="modal-close"
                   onClick={() => setShowPassword(false)}
                 >
@@ -359,6 +474,54 @@ export default function HREmployees({ onBack }) {
                     </button>
                   </div>
                 </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {employeeToDelete && (
+          <div className="password-modal-overlay" onClick={closeDeleteConfirm}>
+            <div className="password-modal-content delete-confirm-content" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h3>Delete Employee</h3>
+                <button
+                  type="button"
+                  className="modal-close"
+                  onClick={closeDeleteConfirm}
+                  disabled={isDeleting}
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="modal-body">
+                <p className="delete-confirm-message">
+                  Are you sure you want to delete <strong>{employeeToDelete.name}</strong>
+                  {employeeToDelete.employee_id ? ` (${employeeToDelete.employee_id})` : ''}?
+                </p>
+                <p className="delete-confirm-warning">
+                  This action cannot be undone. The employee will be permanently removed.
+                </p>
+
+                <div className="modal-actions">
+                  <button
+                    type="button"
+                    className="action-btn cancel-btn"
+                    onClick={closeDeleteConfirm}
+                    disabled={isDeleting}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="action-btn delete-btn"
+                    onClick={confirmDeleteEmployee}
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? 'Deleting...' : 'Delete Employee'}
+                  </button>
+                </div>
               </div>
             </div>
           </div>

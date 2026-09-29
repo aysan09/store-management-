@@ -1168,6 +1168,62 @@ body {
   justify-content: flex-end;
 }
 
+/* Delete Confirmation Modal */
+.delete-confirm-message {
+  margin: 0 0 12px;
+  font-size: 16px;
+  color: #1f2937;
+  line-height: 1.5;
+}
+
+.delete-confirm-message strong {
+  color: #111827;
+}
+
+.delete-confirm-warning {
+  margin: 0;
+  padding: 12px 16px;
+  background: #fef2f2;
+  border-left: 4px solid #ef4444;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #b91c1c;
+  line-height: 1.5;
+}
+
+/* Registration Confirmation Modal */
+.registration-confirm-details {
+  margin: 4px 0 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.confirm-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  font-size: 14px;
+}
+
+.confirm-detail-row + .confirm-detail-row {
+  border-top: 1px solid #e5e7eb;
+}
+
+.confirm-detail-label {
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.confirm-detail-value {
+  color: #111827;
+  font-weight: 600;
+  text-align: right;
+  word-break: break-word;
+}
+
 /* Responsive Design */
 @media (max-width: 1024px) {
   .employee-table-header,

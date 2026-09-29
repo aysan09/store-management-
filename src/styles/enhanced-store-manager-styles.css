@@ -62,6 +62,17 @@
   box-shadow: none;
 }
 
+/* Icon-only square button (e.g. Refresh Data) */
+.btn-request.icon-only-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  font-size: 16px;
+}
+
 /* Enhanced Table Styles */
 .approved-requests-table-container {
   overflow-x: auto;
@@ -389,6 +400,12 @@
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* Spinning Font Awesome refresh icon (e.g. Refresh Requests button) */
+.fas.spinning {
+  display: inline-block;
+  animation: spin 0.8s linear infinite;
 }
 
 /* Enhanced Toast Styles */

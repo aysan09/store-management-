@@ -12,6 +12,7 @@ import FinishedRequests from './FinishedRequests';
 import HeroPage from './HeroPage';
 import EmployeeRegistration from './EmployeeRegistration';
 import HREmployees from './HREmployees';
+import LoadingPage from './components/LoadingPage';
 import { loadSession, saveSession, clearSession, isSessionValid, updateLastActivity } from './utils/sessionUtils';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -22,6 +23,28 @@ import './styles/mobile-styles.css';
 export default function App() {
   const [view, setView] = useState('hero');
   const [user, setUser] = useState(null);
+
+  // The database stores request statuses in lowercase ('approved', 'finished')
+  // while the screens compare against capitalised labels. Normalise once here so
+  // every view agrees on the casing and the database IDs are never dropped.
+  const normalizeRequest = (request) => {
+    if (!request || typeof request !== 'object') return request;
+
+    const status = request.status || 'Pending';
+
+    return {
+      ...request,
+      // Database IDs: request -> request.id, employee -> employee.id, item -> items.id
+      employeeId: request.employeeId ?? null,
+      itemId: request.itemId ?? null,
+      status: status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
+    };
+  };
+
+  const normalizeRequests = (requestList) => (Array.isArray(requestList) ? requestList.map(normalizeRequest) : []);
+
+  // Shows the splash/loading screen until the initial data fetch settles
+  const [loading, setLoading] = useState(true);
 
   // Load user from localStorage on app initialization with session validation
   useEffect(() => {
@@ -114,61 +137,77 @@ export default function App() {
     { id: 2, name: "Store Manager", department: "Store", position: "Manager", employeeId: "STORE100", password: "store123", dateCreated: "2024-02-26" }
   ]);
 
+  // Fetch items, requests, and employees from database
+  const fetchData = async () => {
+    try {
+      console.log('Fetching data from database...');
+
+      // Fetch items
+      const itemsResponse = await fetch('/api/items');
+      if (itemsResponse.ok) {
+        const itemsResult = await itemsResponse.json();
+        if (itemsResult.success) {
+          setInventory(itemsResult.data);
+        }
+      } else {
+        console.error('Failed to fetch items:', itemsResponse.status);
+      }
+
+      // Fetch requests
+      const requestsResponse = await fetch('/api/requests');
+      if (requestsResponse.ok) {
+        const requestsResult = await requestsResponse.json();
+        if (requestsResult.success) {
+          const requestList = Array.isArray(requestsResult.data)
+            ? requestsResult.data
+            : (requestsResult.data?.requests || []);
+          setRequests(normalizeRequests(requestList));
+        }
+      } else {
+        console.error('Failed to fetch requests:', requestsResponse.status);
+      }
+
+      // Fetch employees
+      const employeesResponse = await fetch('/api/employees');
+      if (employeesResponse.ok) {
+        const employeesResult = await employeesResponse.json();
+        if (employeesResult.success) {
+          const transformedEmployees = employeesResult.data.map(emp => ({
+            id: emp.id,
+            name: emp.name,
+            department: emp.department,
+            position: emp.position,
+            employeeId: emp.employee_id,
+            dateCreated: emp.date_created
+          }));
+          setEmployees(transformedEmployees);
+        }
+      } else {
+        console.error('Failed to fetch employees:', employeesResponse.status);
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };
+
+  // Refresh handler exposed to child views (e.g. HR Records refresh button)
+  const refreshData = async () => {
+    await fetchData();
+  };
+
   // Fetch items, requests, and employees from database on app initialization
   useEffect(() => {
-    const fetchData = async () => {
+    const initialize = async () => {
       try {
-        console.log('Fetching data from database...');
-
-        // Fetch items
-        const itemsResponse = await fetch('/api/items');
-        if (itemsResponse.ok) {
-          const itemsResult = await itemsResponse.json();
-          if (itemsResult.success) {
-            setInventory(itemsResult.data);
-          }
-        } else {
-          console.error('Failed to fetch items:', itemsResponse.status);
-        }
-
-        // Fetch requests
-        const requestsResponse = await fetch('/api/requests');
-        if (requestsResponse.ok) {
-          const requestsResult = await requestsResponse.json();
-          if (requestsResult.success) {
-            const requestList = Array.isArray(requestsResult.data)
-              ? requestsResult.data
-              : (requestsResult.data?.requests || []);
-            setRequests(requestList);
-          }
-        } else {
-          console.error('Failed to fetch requests:', requestsResponse.status);
-        }
-
-        // Fetch employees
-        const employeesResponse = await fetch('/api/employees');
-        if (employeesResponse.ok) {
-          const employeesResult = await employeesResponse.json();
-          if (employeesResult.success) {
-            const transformedEmployees = employeesResult.data.map(emp => ({
-              id: emp.id,
-              name: emp.name,
-              department: emp.department,
-              position: emp.position,
-              employeeId: emp.employee_id,
-              dateCreated: emp.date_created
-            }));
-            setEmployees(transformedEmployees);
-          }
-        } else {
-          console.error('Failed to fetch employees:', employeesResponse.status);
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error);
+        await fetchData();
+      } finally {
+        // Hide the loading screen once the initial fetch settles (success or failure),
+        // with a short delay so the animation is visible for at least a moment
+        setTimeout(() => setLoading(false), 500);
       }
     };
 
-    fetchData();
+    initialize();
   }, []);
 
   // Function to mark a request as finished
@@ -223,8 +262,7 @@ export default function App() {
           req.id === request.id
             ? { ...req, status: 'Finished', dateFinished: currentDate }
             : req
-        ));
-        setInventory(prev => prev.map(invItem =>
+        ));        setInventory(prev => prev.map(invItem =>
           invItem.id === item.id
             ? { ...invItem, quantity: invItem.quantity - quantity }
             : invItem
@@ -250,7 +288,7 @@ export default function App() {
       notifyError('Please enter both employee ID and password.');
       return;
     }
-    
+
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -268,48 +306,59 @@ export default function App() {
         if (result.success) {
           const employee = result.data;
           setUser(employee);
-          
+
           localStorage.setItem('currentUser', JSON.stringify(employee));
-          
+
           const position = employee.position.toLowerCase().trim();
           const department = employee.department.toLowerCase().trim();
-          
+
           let targetView = 'store';
-          
+
           if (department.includes('hr') || position.includes('hr')) {
             targetView = 'hr-reviews';
           } else if (department.includes('store') && position.includes('manager')) {
             targetView = 'store-manager';
           }
-          
+
           notifySuccess(`Welcome back, ${employee.name || 'User'}!`);
           setView(targetView);
         } else {
           notifyError(result.message || 'Invalid employee ID or password. Please try again.');
         }
+      } else if (response.status === 401 || response.status === 400) {
+        // Invalid credentials: show the server's message on the login screen and stop.
+        let message = 'Invalid employee ID or password. Please try again.';
+        try {
+          const result = await response.json();
+          if (result && result.message) message = result.message;
+        } catch (parseError) {
+          console.warn('Could not parse login error response:', parseError);
+        }
+        notifyError(message);
       } else {
-        // Fallback to local authentication if API is not available
+        // Server reachable but returned an unexpected status (e.g. 5xx):
+        // use the local fallback only for genuine server/connection problems.
         const employee = employees.find(emp => {
           const employeeId = emp.employeeId || emp.employee_id;
           return employeeId === userData.id;
         });
-        
+
         if (employee && employee.password === userData.password) {
           setUser(employee);
-          
+
           localStorage.setItem('currentUser', JSON.stringify(employee));
-          
+
           const position = employee.position.toLowerCase().trim();
           const department = employee.department.toLowerCase().trim();
-          
+
           let targetView = 'store';
-          
+
           if (department.includes('hr') || position.includes('hr')) {
             targetView = 'hr-reviews';
           } else if (department.includes('store') && position.includes('manager')) {
             targetView = 'store-manager';
           }
-          
+
           notifySuccess(`Welcome back, ${employee.name || 'User'}!`);
           setView(targetView);
         } else {
@@ -346,12 +395,12 @@ export default function App() {
         setView('request-form');
         window.location.hash = 'request-form';
       };
-      
+
       return (
-        <StorePage 
-          onBack={handleLogout} 
-          onRequest={handleStoreRequest} 
-          items={inventory} 
+        <StorePage
+          onBack={handleLogout}
+          onRequest={handleStoreRequest}
+          items={inventory}
           isManager={false}
         />
       );
@@ -359,9 +408,9 @@ export default function App() {
 
     if (view === 'store-manager') {
       return (
-        <StoreManagerPage 
-          onBack={handleLogout} 
-          inventory={inventory} 
+        <StoreManagerPage
+          onBack={handleLogout}
+          inventory={inventory}
           setInventory={setInventory}
           onViewRequests={() => setView('hr-reviews')}
           onAddItem={() => setView('add-item')}
@@ -374,8 +423,8 @@ export default function App() {
 
     if (view === 'add-item') {
       return (
-        <AddItemPage 
-          onBack={() => setView('store-manager')} 
+        <AddItemPage
+          onBack={() => setView('store-manager')}
           onSave={(newItem) => {
             setInventory([...inventory, newItem]);
             setView('store-manager');
@@ -387,7 +436,7 @@ export default function App() {
 
     if (view === 'approved-requests') {
       return (
-        <ApprovedRequests 
+        <ApprovedRequests
           onBack={() => setView('add-item')}
           approvedRequests={requests.filter(req => req.status === 'Approved')}
           onMarkFinished={markRequestFinished}
@@ -397,7 +446,7 @@ export default function App() {
 
     if (view === 'finished-requests') {
       return (
-        <FinishedRequests 
+        <FinishedRequests
           onBack={() => setView('store-manager')}
           finishedRequests={requests.filter(req => req.status === 'Finished')}
         />
@@ -406,30 +455,30 @@ export default function App() {
 
     if (view === 'request-form') {
       return (
-        <RequestForm 
-          onBack={() => setView('store')} 
+        <RequestForm
+          onBack={() => setView('store')}
           onViewStatus={() => setView('request-status')}
-          items={inventory} 
+          items={inventory}
           preselectedItemId={requestedItemId}
           user={user}
-          onAddRequest={(newRequest) => setRequests(previous => [...previous, newRequest])}
+          onAddRequest={(newRequest) => setRequests(previous => [...previous, normalizeRequest(newRequest)])}
         />
       );
     }
 
     if (view === 'request-status') {
       return (
-        <RequestStatus 
-          onBack={() => setView('request-form')} 
-          requests={requests} 
+        <RequestStatus
+          onBack={() => setView('request-form')}
+          requests={requests}
         />
       );
     }
 
     if (view === 'hr-reviews') {
       return (
-        <HRReview 
-          onBack={handleLogout} 
+        <HRReview
+          onBack={handleLogout}
           onViewRecords={() => navigateTo('hr-records')}
           onRegisterEmployee={() => navigateTo('employee-registration')}
           onEmployeeManagement={() => navigateTo('employee-management')}
@@ -441,9 +490,10 @@ export default function App() {
 
     if (view === 'hr-records') {
       return (
-        <HRRecords 
-          onBack={() => setView('hr-reviews')} 
+        <HRRecords
+          onBack={() => setView('hr-reviews')}
           allRequests={requests}
+          onRefresh={refreshData}
           onGoToHRReview={() => setView('hr-reviews')}
         />
       );
@@ -451,7 +501,7 @@ export default function App() {
 
     if (view === 'employee-management') {
       return (
-        <HREmployees 
+        <HREmployees
           onBack={() => setView('hr-reviews')}
         />
       );
@@ -459,7 +509,7 @@ export default function App() {
 
     if (view === 'employee-registration') {
       return (
-        <EmployeeRegistration 
+        <EmployeeRegistration
           onBack={() => setView('hr-reviews')}
           onAddEmployee={handleAddEmployee}
         />
@@ -468,6 +518,11 @@ export default function App() {
 
     return <HeroPage onLoginClick={() => setView('login')} onAboutClick={() => setView('about')} />;
   };
+
+  // Show the loading page while initial data is being fetched
+  if (loading) {
+    return <LoadingPage />;
+  }
 
   return (
     <>

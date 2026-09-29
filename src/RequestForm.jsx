@@ -72,7 +72,9 @@ export default function RequestForm({ onBack, onViewStatus, items, onAddRequest,
       try {
         const currentDate = new Date().toISOString().split('T')[0];
         const newRequest = {
+          employeeId: user ? user.id : null,
           employeeName: user ? user.name : "Unknown User",
+          itemId: currentItem.id,
           itemName: currentItem.model,
           itemBrand: currentItem.brand,
           quantity: parseInt(quantity),
@@ -98,12 +100,15 @@ export default function RequestForm({ onBack, onViewStatus, items, onAddRequest,
         });
 
         const result = await response.json();
-        
+
         if (result.success) {
-          // Add to local state with the server-generated ID
+          // Keep the IDs the database returned so every screen can display them
           const fullRequest = {
             ...newRequest,
             id: result.data.id,
+            employeeId: result.data.employeeId ?? newRequest.employeeId,
+            itemId: result.data.itemId ?? newRequest.itemId,
+            status: result.data.status || newRequest.status,
             dateApproved: null,
             dateFinished: null
           };
@@ -150,6 +155,10 @@ export default function RequestForm({ onBack, onViewStatus, items, onAddRequest,
         <div className="request-layout">
           <div className="request-card-form">
             <h2 className="form-sub">Employee Request Form</h2>
+            <div className="request-employee-info">
+              <span className="request-employee-name">{user ? user.name : 'Unknown User'}</span>
+              <span className="request-employee-id">Employee ID: {user?.employee_id || user?.employeeId || user?.id || 'N/A'}</span>
+            </div>
             <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label>Select Item<span className="required">*</span></label>

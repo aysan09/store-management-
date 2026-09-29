@@ -11,7 +11,7 @@ let notifications = [];
 // @access  Private
 router.post('/', async (req, res) => {
     try {
-        const { message, type, itemId, itemName, employeeName } = req.body;
+        const { message, type, itemId, itemName, employeeId, employeeName } = req.body;
 
         // Validate required fields
         if (!message || !type) {
@@ -28,6 +28,7 @@ router.post('/', async (req, res) => {
             type,
             itemId,
             itemName,
+            employeeId,
             employeeName,
             timestamp: new Date().toISOString(),
             read: false
@@ -39,8 +40,10 @@ router.post('/', async (req, res) => {
         // Also store in database for persistence (optional, but recommended)
         try {
             await db.execute(
-                'INSERT INTO notifications (message, type, item_id, item_name, employee_name, timestamp, read_status) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                [message, type, itemId, itemName, employeeName, new Date(), false]
+                `INSERT INTO notifications
+                 (message, type, item_id, item_name, employee_id, employee_name, timestamp, read_status)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                [message, type, itemId ?? null, itemName ?? null, employeeId ?? null, employeeName ?? null, new Date(), false]
             );
         } catch (dbError) {
             console.warn('Failed to save notification to database:', dbError.message);
@@ -212,12 +215,24 @@ async function initNotificationsTable() {
         type VARCHAR(50) NOT NULL,
         item_id INT,
         item_name VARCHAR(255),
+        employee_id INT,
         employee_name VARCHAR(255),
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
         read_status BOOLEAN DEFAULT FALSE,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+        // Add employee_id to tables created by older versions
+        try {
+            await db.execute('ALTER TABLE notifications ADD COLUMN employee_id INT AFTER item_name');
+            console.log('✅ Added employee_id column to notifications table');
+        } catch (alterError) {
+            if (alterError.code !== 'ER_DUP_FIELDNAME') {
+                console.error('Error adding employee_id column to notifications:', alterError.message);
+            }
+        }
+
         console.log('✅ Notifications table initialized successfully');
     } catch (error) {
         console.error('❌ Error initializing notifications table:', error.message);
